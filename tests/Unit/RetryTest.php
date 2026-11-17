@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\Request;
+use Snapsbrew\Exceptions\ConflictException;
 use Snapsbrew\Exceptions\ConnectionException;
 use Snapsbrew\Exceptions\RateLimitException;
 use Snapsbrew\Exceptions\ServerException;
@@ -115,6 +116,74 @@ it('retries the idempotent cancel of a batch after a server error', function () 
 
     expect($client->batches()->cancel('b')->isFinished())->toBeTrue()
         ->and($history)->toHaveCount(2);
+});
+
+it('retries a snap with an idempotency key while the key is in progress', function () {
+    $history = [];
+    $delays = [];
+    $client = snapsbrew([
+        json(['message' => 'In progress.', 'code' => 'idempotency_key_in_progress'], 409),
+        json(snapPayload(), 201, ['X-Idempotent-Replay' => 'true']),
+    ], $history, noSleep(2, $delays));
+
+    $snap = $client->snaps()->create('tpl', idempotencyKey: 'order-1');
+
+    expect($snap->replayed)->toBeTrue()
+        ->and($history)->toHaveCount(2)
+        ->and($delays)->toHaveCount(1)
+        ->and($delays[0])->toBeGreaterThanOrEqual(250)->toBeLessThanOrEqual(500)
+        ->and(body($history[1]['request'])['idempotency_key'])->toBe('order-1');
+});
+
+it('retries a batch with an idempotency key while the key is in progress', function () {
+    $history = [];
+    $client = snapsbrew([
+        json(['message' => 'In progress.', 'code' => 'idempotency_key_in_progress'], 409),
+        json(batchPayload(), 202),
+    ], $history, noSleep(2));
+
+    expect($client->batches()->create('tpl', [[['layer' => 'a', 'text' => 'A']]], idempotencyKey: 'batch-1')->totalRows)->toBe(2)
+        ->and($history)->toHaveCount(2);
+});
+
+it('throws the conflict when the key is still in progress after the last retry', function () {
+    $history = [];
+    $conflict = json(['message' => 'In progress.', 'code' => 'idempotency_key_in_progress'], 409);
+    $client = snapsbrew([$conflict, $conflict, $conflict], $history, noSleep(2));
+
+    expect(fn () => $client->snaps()->create('tpl', idempotencyKey: 'order-1'))->toThrow(ConflictException::class)
+        ->and($history)->toHaveCount(3);
+});
+
+it('does not retry a conflict that a repeat cannot fix', function (string $code, string $resource) {
+    $history = [];
+    $client = snapsbrew([json(['message' => 'Use a new key.', 'code' => $code], 409), json(snapPayload(), 201)], $history, noSleep(2));
+
+    $call = fn () => $resource === 'snaps'
+        ? $client->snaps()->create('tpl', idempotencyKey: 'order-1')
+        : $client->batches()->create('tpl', [[]], idempotencyKey: 'order-1');
+
+    expect($call)->toThrow(ConflictException::class)
+        ->and($history)->toHaveCount(1);
+})->with([
+    'key belongs to a batch' => ['idempotency_key_belongs_to_batch', 'snaps'],
+    'key belongs to a snap' => ['idempotency_key_belongs_to_snap', 'batches'],
+]);
+
+it('does not retry an in-progress conflict for a request with no idempotency key', function () {
+    $history = [];
+    $client = snapsbrew([json(['code' => 'idempotency_key_in_progress'], 409), json([], 200)], $history, noSleep(2));
+
+    expect(fn () => $client->tags()->sync('tpl', [1]))->toThrow(ConflictException::class)
+        ->and($history)->toHaveCount(1);
+});
+
+it('does not retry a snap without an idempotency key after a 500 with the internal error code', function () {
+    $history = [];
+    $client = snapsbrew([json(['message' => 'The server could not create the snap.', 'code' => 'internal_error'], 500), json(snapPayload(), 201)], $history, noSleep(2));
+
+    expect(fn () => $client->snaps()->create('tpl'))->toThrow(ServerException::class)
+        ->and($history)->toHaveCount(1);
 });
 
 it('grows the delay exponentially with jitter', function () {

@@ -98,6 +98,17 @@ final readonly class Response
         return $this->headers[strtolower($name)][0] ?? null;
     }
 
+    /**
+     * A header that holds a whole number, or null when the header is missing
+     * or holds another value.
+     */
+    public function intHeader(string $name): ?int
+    {
+        $value = trim($this->header($name) ?? '');
+
+        return ctype_digit($value) ? (int) $value : null;
+    }
+
     public function successful(): bool
     {
         return $this->status >= 200 && $this->status < 300;

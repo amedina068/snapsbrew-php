@@ -9,12 +9,15 @@ use Snapsbrew\Exceptions\UnexpectedResponseException;
 
 /**
  * One snap of a batch.
+ *
+ * The API gives each item an identifier: your name for it, or `item_1`,
+ * `item_2` and so on. An item from another source can have no identifier.
  */
 final readonly class BatchItem
 {
     public function __construct(
         public string $id,
-        public string $identifier,
+        public ?string $identifier,
         public Status $status,
         public ?string $mediaUrl = null,
         public ?string $lastError = null,
@@ -29,7 +32,7 @@ final readonly class BatchItem
 
         return new self(
             id: $payload->string('id'),
-            identifier: $payload->string('identifier'),
+            identifier: $payload->nullableString('identifier'),
             status: Status::tryFrom($payload->string('status')) ?? throw UnexpectedResponseException::field('status', 'status'),
             mediaUrl: $payload->nullableString('media_url'),
             lastError: $payload->nullableString('last_error'),

@@ -10,6 +10,7 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Snapsbrew\Exceptions\ApiException;
+use Snapsbrew\Exceptions\ConflictException;
 use Snapsbrew\Exceptions\ConnectionException;
 use Snapsbrew\Exceptions\MissingCredentialsException;
 use Snapsbrew\Snapsbrew;
@@ -21,6 +22,8 @@ use Snapsbrew\Snapsbrew;
  * The SDK sends a request again after a 429, a 5xx or a connection error.
  * It sends a request that is not idempotent again only after a 429, or after
  * a connection error that occurred before the instance received the request.
+ * A request with an idempotency key also gets a retry after a 409 with the
+ * code `idempotency_key_in_progress`.
  *
  * @internal
  */
@@ -46,12 +49,16 @@ final readonly class Transport
     }
 
     /**
+     * A body with an `idempotency_key` makes the request idempotent.
+     *
      * @param  array<string, mixed>  $data
-     * @param  bool  $idempotent  True when the endpoint is safe to call two times, or the body has an idempotency key.
+     * @param  bool  $idempotent  True when the endpoint is safe to call two times.
      */
     public function post(string $path, array $data = [], bool $idempotent = false): Response
     {
-        return $this->send('POST', $path, body: $this->encode($data), idempotent: $idempotent);
+        $keyed = isset($data['idempotency_key']);
+
+        return $this->send('POST', $path, body: $this->encode($data), idempotent: $idempotent || $keyed, keyed: $keyed);
     }
 
     /**
@@ -82,6 +89,7 @@ final readonly class Transport
         ?string $body = null,
         string $contentType = 'application/json',
         bool $idempotent = false,
+        bool $keyed = false,
     ): Response {
         $idempotent = $idempotent || in_array($method, self::IDEMPOTENT_METHODS, true);
         $attempts = 0;
@@ -109,7 +117,7 @@ final readonly class Transport
                 return $response;
             }
 
-            if ($this->shouldRetry($response, $attempts, $idempotent)) {
+            if ($this->shouldRetry($response, $attempts, $idempotent, $keyed)) {
                 $this->retry->sleep($this->retry->delay($attempts, $response->retryAfter()));
 
                 continue;
@@ -119,17 +127,18 @@ final readonly class Transport
         }
     }
 
-    private function shouldRetry(Response $response, int $attempts, bool $idempotent): bool
+    private function shouldRetry(Response $response, int $attempts, bool $idempotent, bool $keyed): bool
     {
-        if (! $this->retry->allows($attempts)) {
+        if (! $this->retry->allows($attempts) || ! $this->retry->accepts($response->retryAfter())) {
             return false;
         }
 
-        if ($response->status === 429) {
-            return $this->retry->accepts($response->retryAfter());
-        }
-
-        return $response->status >= 500 && $idempotent && $this->retry->accepts($response->retryAfter());
+        return match (true) {
+            $response->status === 429 => true,
+            $response->status === 409 => $keyed && ($response->jsonOrEmpty()['code'] ?? null) === ConflictException::IDEMPOTENCY_KEY_IN_PROGRESS,
+            $response->status >= 500 => $idempotent,
+            default => false,
+        };
     }
 
     /**

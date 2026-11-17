@@ -47,7 +47,7 @@ final readonly class Batches
             'idempotency_key' => $idempotencyKey,
         ], static fn (mixed $value): bool => $value !== null);
 
-        $response = $this->transport->post('v1/snaps/batches', $body, idempotent: $idempotencyKey !== null);
+        $response = $this->transport->post('v1/snaps/batches', $body);
 
         return Batch::fromArray($response->resource(), $response->requestUuid(), $response->replayed());
     }

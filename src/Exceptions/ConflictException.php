@@ -5,18 +5,33 @@ declare(strict_types=1);
 namespace Snapsbrew\Exceptions;
 
 /**
- * HTTP 409: another request with the same idempotency key is in progress, or
- * the stored state changed before the write.
+ * HTTP 409: the instance refused the write. `errorCode()` tells you why.
+ *
+ * - `idempotency_key_in_progress`: another request with the same key is still
+ *   running. A repeat with the same key is safe, and the SDK retries it.
+ * - `idempotency_key_belongs_to_snap`: a single snap owns the key, so a batch
+ *   cannot use it. Send a new key.
+ * - `idempotency_key_belongs_to_batch`: a batch owns the key, so a single snap
+ *   cannot use it. Send a new key.
+ * - `legacy_edit_rejected_for_v2`: the template uses the v2 editor document,
+ *   so `templates()->update()` cannot change it.
  */
 final class ConflictException extends ApiException
 {
-    /**
-     * The machine code of the conflict, for example `editor_document_conflict`.
-     */
-    public function errorCode(): ?string
-    {
-        $code = $this->body()['code'] ?? null;
+    public const IDEMPOTENCY_KEY_IN_PROGRESS = 'idempotency_key_in_progress';
 
-        return is_string($code) ? $code : null;
+    public const IDEMPOTENCY_KEY_BELONGS_TO_SNAP = 'idempotency_key_belongs_to_snap';
+
+    public const IDEMPOTENCY_KEY_BELONGS_TO_BATCH = 'idempotency_key_belongs_to_batch';
+
+    public const LEGACY_EDIT_REJECTED_FOR_V2 = 'legacy_edit_rejected_for_v2';
+
+    /**
+     * True when another request with the same idempotency key is still
+     * running. A repeat with the same key is safe.
+     */
+    public function inProgress(): bool
+    {
+        return $this->errorCode() === self::IDEMPOTENCY_KEY_IN_PROGRESS;
     }
 }

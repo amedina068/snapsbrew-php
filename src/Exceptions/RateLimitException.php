@@ -16,4 +16,22 @@ final class RateLimitException extends ApiException
     {
         return $this->response->retryAfter();
     }
+
+    /**
+     * The number of requests that the limit allows in one minute, from the
+     * `X-RateLimit-Limit` header.
+     */
+    public function limit(): ?int
+    {
+        return $this->response->intHeader('X-RateLimit-Limit');
+    }
+
+    /**
+     * The number of requests left in the current minute, from the
+     * `X-RateLimit-Remaining` header.
+     */
+    public function remaining(): ?int
+    {
+        return $this->response->intHeader('X-RateLimit-Remaining');
+    }
 }

@@ -98,6 +98,82 @@ it('gives the code of a conflict', function () {
     $this->fail('No conflict exception was thrown.');
 });
 
+it('maps a 403 from the snap endpoint to the authorization error', function () {
+    try {
+        snapsbrew([json(['message' => 'This action is unauthorized.'], 403)])->snaps()->create('tpl');
+    } catch (AuthorizationException $exception) {
+        expect($exception->getMessage())->toBe('This action is unauthorized.')
+            ->and($exception->status)->toBe(403);
+
+        return;
+    }
+
+    $this->fail('No authorization exception was thrown.');
+});
+
+it('gives the code of each idempotency conflict', function (string $code, bool $inProgress) {
+    try {
+        snapsbrew([json(['message' => 'The idempotency_key cannot be used.', 'code' => $code], 409)])
+            ->snaps()->create('tpl', idempotencyKey: 'order-1');
+    } catch (ConflictException $exception) {
+        expect($exception->errorCode())->toBe($code)
+            ->and($exception->inProgress())->toBe($inProgress)
+            ->and($exception->getMessage())->toBe('The idempotency_key cannot be used.');
+
+        return;
+    }
+
+    $this->fail('No conflict exception was thrown.');
+})->with([
+    'in progress' => [ConflictException::IDEMPOTENCY_KEY_IN_PROGRESS, true],
+    'belongs to a snap' => [ConflictException::IDEMPOTENCY_KEY_BELONGS_TO_SNAP, false],
+    'belongs to a batch' => [ConflictException::IDEMPOTENCY_KEY_BELONGS_TO_BATCH, false],
+]);
+
+it('reads the generic body of a 500 from the snap endpoint', function () {
+    $message = 'The server could not create the snap. Try again later. If the error continues, contact support and give the X-Request-Uuid header of this response.';
+
+    try {
+        snapsbrew([json(['message' => $message, 'code' => 'internal_error'], 500, ['X-Request-Uuid' => 'req-9'])])
+            ->snaps()->create('tpl');
+    } catch (ServerException $exception) {
+        expect($exception->getMessage())->toBe($message)
+            ->and($exception->errorCode())->toBe('internal_error')
+            ->and($exception->requestUuid())->toBe('req-9');
+
+        return;
+    }
+
+    $this->fail('No server exception was thrown.');
+});
+
+it('gives the rate limit headers of a rate limit error', function () {
+    try {
+        snapsbrew([json(['message' => 'Too Many Attempts.'], 429, ['Retry-After' => '30', 'X-RateLimit-Limit' => '60', 'X-RateLimit-Remaining' => '0'])])->account();
+    } catch (RateLimitException $exception) {
+        expect($exception->limit())->toBe(60)
+            ->and($exception->remaining())->toBe(0);
+
+        return;
+    }
+
+    $this->fail('No rate limit exception was thrown.');
+});
+
+it('gives null rate limit values when the headers are missing', function () {
+    try {
+        snapsbrew([json(['message' => 'Too Many Attempts.'], 429)])->account();
+    } catch (RateLimitException $exception) {
+        expect($exception->limit())->toBeNull()
+            ->and($exception->remaining())->toBeNull()
+            ->and($exception->errorCode())->toBeNull();
+
+        return;
+    }
+
+    $this->fail('No rate limit exception was thrown.');
+});
+
 it('uses a default message when the body is not JSON', function () {
     try {
         snapsbrew([new Response(503, [], '<html>down</html>')])->account();

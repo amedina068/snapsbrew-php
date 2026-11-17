@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Psr7\Response;
 use Snapsbrew\Data\Template;
+use Snapsbrew\Exceptions\ConflictException;
 use Snapsbrew\Variants;
 
 function templatePayload(array $overrides = []): array
@@ -15,8 +16,9 @@ function templatePayload(array $overrides = []): array
         'height' => 630,
         'layers' => [
             ['layer' => 'review_title', 'available_modifications' => ['text' => 'The worst movie']],
-            ['layer' => 'review_poster', 'type' => 'image', 'available_modifications' => ['image_url' => 'https://example.com/a.jpg']],
+            ['layer' => 'review_poster', 'available_modifications' => ['image_url' => 'https://example.com/a.jpg']],
             ['layer' => 'decoration', 'available_modifications' => []],
+            ['layer' => null, 'available_modifications' => []],
         ],
         'created_at' => '2026-05-01T12:00:00Z',
     ];
@@ -33,8 +35,9 @@ it('lists one page of templates', function () {
         ->and($page->nextCursor)->toBe('eyJpZCI6MTB9')
         ->and($page->first())->toBeInstanceOf(Template::class)
         ->and($page->first()?->layer('review_title')?->modifications)->toBe(['text' => 'The worst movie'])
-        ->and($page->first()?->layer('review_poster')?->type)->toBe('image')
+        ->and($page->first()?->layer('review_poster')?->accepts('image_url'))->toBeTrue()
         ->and($page->first()?->layer('decoration')?->modifications)->toBe([])
+        ->and($page->first()?->layers[3]->key)->toBeNull()
         ->and((string) $history[0]['request']->getUri())->toBe('https://snapsbrew.test/api/v1/templates');
 });
 
@@ -105,6 +108,19 @@ it('updates a template by its numeric ID', function () {
     expect($history[0]['request']->getMethod())->toBe('PATCH')
         ->and($history[0]['request']->getUri()->getPath())->toBe('/api/v1/templates/42')
         ->and(body($history[0]['request']))->toBe(['title' => 'New', 'width' => 800, 'height' => 600]);
+});
+
+it('throws a conflict when the template uses the v2 editor document', function () {
+    try {
+        snapsbrew([json(['code' => 'legacy_edit_rejected_for_v2'], 409)])->templates()->update('u', 'New');
+    } catch (ConflictException $exception) {
+        expect($exception->errorCode())->toBe(ConflictException::LEGACY_EDIT_REJECTED_FOR_V2)
+            ->and($exception->inProgress())->toBeFalse();
+
+        return;
+    }
+
+    $this->fail('No conflict exception was thrown.');
 });
 
 it('deletes a template', function () {

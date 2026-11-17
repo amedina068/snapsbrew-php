@@ -37,11 +37,11 @@ final class Fixtures
             $request->is('POST', 'v1/snaps/batches') => new FakeResponse(self::batch(self::uuid(), $request, 'pending'), 202, self::requestHeaders()),
             $request->is('POST', 'v1/snaps/batches/*/cancel') => new FakeResponse(self::batch($segments[3] ?? '', $request, 'canceled', withItems: true)),
             $request->is('GET', 'v1/snaps/batches/*') => new FakeResponse(self::batch($segments[3] ?? '', $request, 'completed', withItems: true)),
-            $request->is('GET', 'v1/screenshots') => new FakeResponse(['data' => [], 'meta' => ['previous_cursor' => null, 'next_cursor' => null]]),
+            $request->is('GET', 'v1/screenshots') => new FakeResponse(['data' => [self::screenshotListItem(self::uuid(), 'https://example.com')], 'meta' => ['previous_cursor' => null, 'next_cursor' => null]]),
             $request->is('GET', 'v1/screenshots/*') => self::data(self::screenshot($segments[2] ?? self::uuid(), 'https://example.com')),
             $request->is('POST', 'v1/screenshots') => self::data(self::screenshot(self::uuid(), self::string($request['url']) ?? 'https://example.com')),
             $request->is('GET', 'v1/media') => new FakeResponse(['current_page' => 1, 'data' => [], 'last_page' => 1, 'per_page' => 12, 'total' => 0]),
-            $request->is('POST', 'v1/media') => new FakeResponse(['id' => 1, 'file_name' => 'image.png', 'src' => 'https://snapsbrew.test/storage/1/image.png']),
+            $request->is('POST', 'v1/media') => new FakeResponse(self::media()),
             $request->is('GET', 'v1/guides/*') => new FakeResponse(['data' => []]),
             $request->is('GET', 'v1/tags') => self::data([]),
             $request->is('POST', 'v1/tags') => new FakeResponse(['data' => ['id' => 1, 'name' => self::string($request['name']) ?? 'Tag', 'slug' => 'tag']], 201),
@@ -176,6 +176,37 @@ final class Fixtures
             'image_url' => "https://snapsbrew.test/storage/screenshots/{$id}.png",
             'width' => 1330,
             'height' => 780,
+            'created_at' => self::CREATED_AT,
+        ];
+    }
+
+    /**
+     * A list item names its id `uuid`, not `id`.
+     *
+     * @return array<string, mixed>
+     */
+    private static function screenshotListItem(string $uuid, string $url): array
+    {
+        $screenshot = self::screenshot($uuid, $url);
+        unset($screenshot['id']);
+
+        return ['uuid' => $uuid] + $screenshot;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function media(): array
+    {
+        return [
+            'id' => 1,
+            'uuid' => self::uuid(),
+            'name' => 'image',
+            'file_name' => 'image.png',
+            'mime_type' => 'image/png',
+            'size' => 1024,
+            'original_url' => 'https://snapsbrew.test/storage/1/image.png',
+            'src' => 'https://snapsbrew.test/storage/1/conversions/image-image.jpg',
             'created_at' => self::CREATED_AT,
         ];
     }

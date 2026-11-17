@@ -49,6 +49,17 @@ class ApiException extends SnapsbrewException
     }
 
     /**
+     * The machine code of the error, for example `internal_error` or
+     * `idempotency_key_in_progress`. The value is null when the body has no code.
+     */
+    public function errorCode(): ?string
+    {
+        $code = $this->body()['code'] ?? null;
+
+        return is_string($code) ? $code : null;
+    }
+
+    /**
      * The `X-Request-Uuid` header. Give this value in a support request.
      */
     public function requestUuid(): ?string

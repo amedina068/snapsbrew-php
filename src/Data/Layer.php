@@ -6,6 +6,9 @@ namespace Snapsbrew\Data;
 
 /**
  * One layer of a template that a variant can change.
+ *
+ * The key is null when the stored layer has no key. A layer with no variant
+ * property, for example an empty or an SVG layer, has no modifications.
  */
 final readonly class Layer
 {
@@ -13,8 +16,7 @@ final readonly class Layer
      * @param  array<string, string|null>  $modifications  The variant properties that the layer accepts, with the current values.
      */
     public function __construct(
-        public string $key,
-        public ?string $type = null,
+        public ?string $key,
         public array $modifications = [],
     ) {}
 
@@ -31,8 +33,7 @@ final readonly class Layer
         }
 
         return new self(
-            key: $payload->string('layer'),
-            type: $payload->nullableString('type'),
+            key: $payload->nullableString('layer'),
             modifications: $modifications,
         );
     }

@@ -14,6 +14,7 @@ describe('screenshots', function () {
         ]], 'meta' => ['previous_cursor' => null, 'next_cursor' => null]])])->screenshots()->list();
 
         expect($page->first()?->id)->toBe('a1b2c3')
+            ->and($page->first()?->imageUrl)->toBe('https://x/a.png')
             ->and($page->hasMore())->toBeFalse();
     });
 
@@ -71,8 +72,10 @@ describe('media', function () {
         file_put_contents($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
 
         $history = [];
-        $media = snapsbrew([json(['id' => 12, 'file_name' => 'logo.png', 'src' => 'https://x/logo.jpg', 'uuid' => 'x'])], $history)
-            ->media()->upload($path, 'logo.png');
+        $media = snapsbrew([json([
+            'id' => 12, 'uuid' => 'm-1', 'name' => 'logo', 'file_name' => 'logo.png', 'mime_type' => 'image/png', 'size' => 68,
+            'original_url' => 'https://x/logo.png', 'src' => 'https://x/logo.jpg', 'created_at' => '2026-05-01T12:00:00Z',
+        ])], $history)->media()->upload($path, 'logo.png');
 
         unlink($path);
 
@@ -80,6 +83,12 @@ describe('media', function () {
         $body = (string) $request->getBody();
 
         expect($media->id)->toBe(12)
+            ->and($media->uuid)->toBe('m-1')
+            ->and($media->name)->toBe('logo')
+            ->and($media->mimeType)->toBe('image/png')
+            ->and($media->size)->toBe(68)
+            ->and($media->originalUrl)->toBe('https://x/logo.png')
+            ->and($media->createdAt?->format('Y-m-d'))->toBe('2026-05-01')
             ->and($request->getHeaderLine('Content-Type'))->toStartWith('multipart/form-data; boundary=')
             ->and($body)->toContain('name="file"; filename="logo.png"')
             ->and($body)->toContain('Content-Type: image/png');

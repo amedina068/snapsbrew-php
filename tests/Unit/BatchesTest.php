@@ -62,6 +62,14 @@ it('reads a finished batch with its items', function () {
         ->and($history[0]['request']->getUri()->getPath())->toBe('/api/v1/snaps/batches/7c1f2a9e-0b44-4a1e-9f2b-5d3c8e1a7b60');
 });
 
+it('reads a batch item with no identifier', function () {
+    $batch = snapsbrew([json(batchPayload([
+        'items' => [['id' => '1', 'identifier' => null, 'status' => 'pending', 'media_url' => null, 'last_error' => null]],
+    ]))])->batches()->find('b-1');
+
+    expect($batch->items[0]->identifier)->toBeNull();
+});
+
 it('cancels a batch', function () {
     $history = [];
     $batch = snapsbrew([json(batchPayload(['status' => 'canceled', 'pending' => 0, 'canceled' => 2, 'items' => []]))], $history)

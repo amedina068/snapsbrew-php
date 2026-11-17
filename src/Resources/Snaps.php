@@ -46,7 +46,7 @@ final readonly class Snaps
             'async' => $async ?: null,
             'webhook_url' => $webhookUrl,
             'idempotency_key' => $idempotencyKey,
-        ]), idempotent: $idempotencyKey !== null);
+        ]));
 
         return Snap::fromArray($response->resource(), $response->requestUuid(), $response->replayed());
     }

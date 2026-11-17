@@ -39,6 +39,8 @@ it('answers each endpoint with sample data', function () {
         ->and(Snapsbrew::templates()->sizes())->toHaveCount(1)
         ->and(Snapsbrew::templates()->publish('abc')->publishedVersion)->toBe(1)
         ->and(Snapsbrew::screenshots()->create('https://example.com')->url)->toBe('https://example.com')
+        ->and(Snapsbrew::screenshots()->list()->first()?->imageUrl)->toStartWith('https://snapsbrew.test/storage/screenshots/')
+        ->and(Snapsbrew::media()->upload(__FILE__)->mimeType)->toBe('image/png')
         ->and(Snapsbrew::snaps()->preview('tpl')->html)->toContain('preview')
         ->and(Snapsbrew::snaps()->create('tpl', async: true, webhookUrl: 'https://example.com/hook')->isPending())->toBeTrue()
         ->and(Snapsbrew::snaps()->createFromCollection('col'))->toHaveCount(1)

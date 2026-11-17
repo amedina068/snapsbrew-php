@@ -6,5 +6,8 @@ namespace Snapsbrew\Exceptions;
 
 /**
  * HTTP 5xx: the instance had an error.
+ *
+ * The body of a 500 from `POST /v1/snaps` has a fixed message and the code
+ * `internal_error`. Give `requestUuid()` in a support request.
  */
 final class ServerException extends ApiException {}

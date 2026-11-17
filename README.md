@@ -173,6 +173,8 @@ $snap = $snapsbrew->snaps()->create($templateId, $variants, idempotencyKey: "ord
 $snap->replayed; // true when the instance returned an earlier snap
 ```
 
+A key belongs to one snap or to one batch. If you send a snap key to `batches()->create()`, or a batch key to `snaps()->create()`, the instance answers with a `ConflictException`. A repeat with the same key does not succeed. Send a new key.
+
 ## Signed URLs
 
 A signed URL renders an image from a plain `<img src>` or an `og:image` tag, with no API call. The first request renders the image and uses one credit. The instance caches the image for later requests with the same URL.
@@ -193,6 +195,8 @@ WARNING: The signing key is a secret. Build signed URLs only on the server. Do n
 
 The signature is the HMAC-SHA256 hex digest of the query parameters. The SDK sorts the parameters by key and joins them as `key=value` with `&`, with the raw values. The `variants` parameter is standard base64 of the JSON array.
 
+The signed URL route is on the site root, not under `/api`. A good URL redirects to the image. If the signature or the template is not valid, the instance sends a placeholder image with status 200, not an error status.
+
 ## Errors
 
 Each exception extends `Snapsbrew\Exceptions\SnapsbrewException`.
@@ -202,14 +206,25 @@ Each exception extends `Snapsbrew\Exceptions\SnapsbrewException`.
 | `AuthenticationException` | HTTP 401. The token is missing or not valid. |
 | `AuthorizationException` | HTTP 403. The token does not have the `api_requests` ability, or a policy refused the action. |
 | `NotFoundException` | HTTP 404. The resource does not exist in your company. |
-| `ConflictException` | HTTP 409. The idempotency key is in use, or the stored state changed. `errorCode()` gives the code. |
+| `ConflictException` | HTTP 409. The instance refused the write. `errorCode()` gives the reason. |
 | `ValidationException` | HTTP 422. `errors()` gives the messages for each field. |
-| `RateLimitException` | HTTP 429. `retryAfter()` gives the seconds to wait. |
-| `ServerException` | HTTP 5xx. |
+| `RateLimitException` | HTTP 429. `retryAfter()` gives the seconds to wait. `limit()` and `remaining()` give the rate limit headers. |
+| `ServerException` | HTTP 5xx. A 500 from `snaps()->create()` has the code `internal_error`. |
 | `ApiException` | Another 4xx status. It is the parent of the HTTP exceptions above. |
 | `ConnectionException` | The SDK did not get a response. |
 | `UnexpectedResponseException` | The body does not have the expected shape. |
 | `MissingCredentialsException` | The client has no URL, no token or no signing key for the call. |
+
+Each HTTP exception has `errorCode()`. It gives the `code` field of the body, or null. These are the codes of a `ConflictException`:
+
+| Code | Cause | Retry |
+|---|---|---|
+| `idempotency_key_in_progress` | Another request with the same key is still running. | Yes, the SDK retries it. |
+| `idempotency_key_belongs_to_snap` | A single snap owns the key, so a batch cannot use it. | No. Send a new key. |
+| `idempotency_key_belongs_to_batch` | A batch owns the key, so a single snap cannot use it. | No. Send a new key. |
+| `legacy_edit_rejected_for_v2` | The template uses the v2 editor document, so `templates()->update()` cannot change it. | No. |
+
+The constants on `ConflictException` hold these codes. `inProgress()` is true for the first code.
 
 ```php
 use Snapsbrew\Exceptions\ValidationException;
@@ -228,6 +243,7 @@ The SDK sends a request again after these errors:
 
 - HTTP 429
 - HTTP 5xx
+- HTTP 409 with the code `idempotency_key_in_progress`, if the request has an idempotency key
 - a connection error
 
 The SDK does not send a request again if the request is not idempotent and the instance can have received it. Thus a `POST` gets a retry only in these conditions:
@@ -236,7 +252,11 @@ The SDK does not send a request again if the request is not idempotent and the i
 - The connection failed before the request left the client. For example, DNS failed or the instance refused the connection.
 - The request has an idempotency key, or the endpoint is safe to call two times (publish, cancel a batch, sync tags).
 
+The SDK does not retry a 409 with another code, because a repeat with the same key does not succeed.
+
 The delay grows exponentially, with jitter: 0.5 s, 1 s, 2 s, and a maximum of 8 s. If the response has a `Retry-After` header, the SDK waits for that time. If `Retry-After` is more than 60 seconds, the SDK does not wait and throws the `RateLimitException`.
+
+The instance allows 60 requests per minute for one user. The two preview endpoints allow 10 requests per minute. Over a limit, the instance sends a 429 with `Retry-After`.
 
 ```php
 use Snapsbrew\Http\RetryPolicy;

@@ -19,3 +19,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Retries after a 429, a 5xx or a connection error, with exponential backoff, jitter and `Retry-After`.
 - PSR-18 and PSR-17 support with `php-http/discovery`.
 - Laravel: a service provider with auto-discovery, a configuration file, a facade, `Snapsbrew::fake()` with assertions, and the `<x-snapsbrew::image>` Blade component.
+- `errorCode()` on each HTTP exception. It gives the `code` field of the error body, for example `internal_error`.
+- Constants on `ConflictException` for the codes `idempotency_key_in_progress`, `idempotency_key_belongs_to_snap`, `idempotency_key_belongs_to_batch` and `legacy_edit_rejected_for_v2`.
+- `ConflictException::inProgress()`.
+- `RateLimitException::limit()` and `RateLimitException::remaining()`. They read the `X-RateLimit-Limit` and `X-RateLimit-Remaining` headers.
+- `Media` has the fields `uuid`, `name`, `mimeType`, `size`, `originalUrl` and `createdAt`.
+
+### Changed
+
+- The SDK retries a request with an idempotency key after a 409 with the code `idempotency_key_in_progress`. It does not retry the other 409 codes.
+- The transport reads the idempotency key from the request body. A `POST` with an `idempotency_key` is idempotent.
+- `Layer::$key` and `BatchItem::$identifier` can be null, as the API documents.
+- `Layer` has no `type` field. The template endpoints do not send it.
+- The fake sends a screenshot list item with an `image_url`, and a media upload with every field.
+- The README describes the conflict codes, the rate limits and the placeholder image of a signed URL that is not valid.
