@@ -51,6 +51,16 @@ jobs:
           extensions: mbstring, fileinfo, json
           coverage: none
 
+      # Laravel 11 has no more security releases, and Composer blocks each
+      # Laravel 11 version with an open advisory. The tests need Laravel 11
+      # to prove that the package works with it, so this CI run only turns
+      # off the block. The package does not change its own dependencies.
+      - name: Allow Laravel 11 versions with security advisories
+        if: matrix.laravel == '11.*'
+        run: |
+          composer config --no-plugins policy.advisories.block false || true
+          composer config --no-plugins audit.block-insecure false || true
+
       - name: Install the dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --dev --no-interaction --no-update
