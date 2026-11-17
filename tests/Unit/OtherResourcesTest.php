@@ -29,6 +29,23 @@ describe('screenshots', function () {
             ->and($history[0]['request']->getUri()->getPath())->toBe('/api/v1/screenshots/a1b2c3');
     });
 
+    it('gives a null image URL when a screenshot has no image', function (string $method) {
+        $item = ['url' => 'https://example.com', 'image_url' => null, 'width' => 1330, 'height' => 780, 'created_at' => '2026-05-01T12:00:00Z'];
+        $client = snapsbrew([json(['data' => $method === 'list'
+            ? [['uuid' => 'a1b2c3'] + $item]
+            : ['id' => 'a1b2c3'] + $item,
+        ] + ($method === 'list' ? ['meta' => ['previous_cursor' => null, 'next_cursor' => null]] : []))]);
+
+        $screenshot = match ($method) {
+            'list' => $client->screenshots()->list()->first(),
+            'find' => $client->screenshots()->find('a1b2c3'),
+            'create' => $client->screenshots()->create('https://example.com'),
+        };
+
+        expect($screenshot?->id)->toBe('a1b2c3')
+            ->and($screenshot?->imageUrl)->toBeNull();
+    })->with(['list', 'find', 'create']);
+
     it('captures a page', function () {
         $history = [];
         $screenshot = snapsbrew([json(['data' => [
@@ -46,13 +63,15 @@ describe('media', function () {
         $history = [];
         $page = snapsbrew([json([
             'current_page' => 1,
-            'data' => [['id' => 12, 'file_name' => 'logo.png', 'src' => 'https://x/logo.jpg', 'model_type' => 'App\\Models\\User']],
+            'data' => [mediaPayload()],
             'last_page' => 2,
             'per_page' => 12,
             'total' => 13,
         ])], $history)->media()->list();
 
         expect($page->first())->toBeInstanceOf(Media::class)
+            ->and($page->first()?->uuid)->toBe('5b0c7a52-3f9e-4a8d-9c1e-2d7f6b4e8a10')
+            ->and($page->first()?->originalUrl)->toBe('https://x/logo.png')
             ->and($page->total)->toBe(13)
             ->and($page->nextPage())->toBe(2)
             ->and($history[0]['request']->getUri()->getQuery())->toBe('page=1');
@@ -60,7 +79,7 @@ describe('media', function () {
 
     it('lists media from a body with a meta key', function () {
         $page = snapsbrew([json([
-            'data' => [['id' => 12, 'file_name' => 'logo.png', 'src' => 'https://x/logo.jpg']],
+            'data' => [mediaPayload()],
             'meta' => ['current_page' => 1, 'per_page' => 12, 'total' => 1],
         ])])->media()->list();
 
@@ -72,10 +91,7 @@ describe('media', function () {
         file_put_contents($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
 
         $history = [];
-        $media = snapsbrew([json([
-            'id' => 12, 'uuid' => 'm-1', 'name' => 'logo', 'file_name' => 'logo.png', 'mime_type' => 'image/png', 'size' => 68,
-            'original_url' => 'https://x/logo.png', 'src' => 'https://x/logo.jpg', 'created_at' => '2026-05-01T12:00:00Z',
-        ])], $history)->media()->upload($path, 'logo.png');
+        $media = snapsbrew([json(mediaPayload(['uuid' => 'm-1']))], $history)->media()->upload($path, 'logo.png');
 
         unlink($path);
 
@@ -100,7 +116,7 @@ describe('media', function () {
         rewind($stream);
 
         $history = [];
-        snapsbrew([json(['id' => 1, 'file_name' => 'a.gif', 'src' => 'https://x/a.gif'])], $history)
+        snapsbrew([json(mediaPayload(['id' => 1, 'name' => 'a', 'file_name' => 'a.gif', 'mime_type' => 'image/gif', 'src' => 'https://x/a.gif']))], $history)
             ->media()->upload($stream, 'a.gif');
 
         expect((string) $history[0]['request']->getBody())->toContain('filename="a.gif"');

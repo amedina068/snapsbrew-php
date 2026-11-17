@@ -33,3 +33,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `Layer` has no `type` field. The template endpoints do not send it.
 - The fake sends a screenshot list item with an `image_url`, and a media upload with every field.
 - The README describes the conflict codes, the rate limits and the placeholder image of a signed URL that is not valid.
+- The `Media` docs list the nine fields that the upload and the list send. The server no longer sends `model_type`, `collection_name`, `preview_url`, `updated_at` or the other internal fields of the media record.
+- `Screenshot::$imageUrl` is null when the screenshot has no image. The server sends `null`, not an empty string.
+- The `ServerException` docs name `POST /v1/snaps/batches`. A failed `batches()->create()` gets a 500 with the code `internal_error`, the same as `snaps()->create()`.

@@ -147,6 +147,25 @@ it('reads the generic body of a 500 from the snap endpoint', function () {
     $this->fail('No server exception was thrown.');
 });
 
+it('reads the generic body of a 500 from the batch endpoint', function () {
+    $message = 'The server could not create the batch. Try again later. If the error continues, contact support and give the X-Request-Uuid header of this response.';
+    $history = [];
+
+    try {
+        snapsbrew([json(['message' => $message, 'code' => 'internal_error'], 500, ['X-Request-Uuid' => 'req-10'])], $history)
+            ->batches()->create('tpl', [[['layer' => 'a', 'text' => 'A']]]);
+    } catch (ServerException $exception) {
+        expect($exception->getMessage())->toBe($message)
+            ->and($exception->errorCode())->toBe('internal_error')
+            ->and($exception->requestUuid())->toBe('req-10')
+            ->and($history)->toHaveCount(1);
+
+        return;
+    }
+
+    $this->fail('No server exception was thrown.');
+});
+
 it('gives the rate limit headers of a rate limit error', function () {
     try {
         snapsbrew([json(['message' => 'Too Many Attempts.'], 429, ['Retry-After' => '30', 'X-RateLimit-Limit' => '60', 'X-RateLimit-Remaining' => '0'])])->account();

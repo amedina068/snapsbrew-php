@@ -9,9 +9,11 @@ use DateTimeImmutable;
 /**
  * An image in the media library of the account.
  *
- * Use `src` as the `image_url` of a variant. The instance always sends `id`,
- * `file_name` and `src`. The other fields are null when the body does not
- * have them.
+ * Use `src` as the `image_url` of a variant. The upload and the list send
+ * nine fields and no other field: `id`, `uuid`, `name`, `file_name`,
+ * `mime_type`, `size`, `original_url`, `src` and `created_at`. The SDK
+ * requires `id`, `file_name` and `src`. The other properties are null when
+ * the body does not have them.
  */
 final readonly class Media
 {

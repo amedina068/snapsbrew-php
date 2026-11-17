@@ -22,7 +22,8 @@ final readonly class Screenshot
 
     /**
      * The list endpoint sends the identifier as `uuid`. The read and the
-     * create endpoints send it as `id`. Each endpoint sends `image_url`.
+     * create endpoints send it as `id`. Each endpoint sends `image_url`, and
+     * the value is null when the screenshot has no image.
      *
      * @param  array<array-key, mixed>  $data
      */

@@ -209,7 +209,7 @@ Each exception extends `Snapsbrew\Exceptions\SnapsbrewException`.
 | `ConflictException` | HTTP 409. The instance refused the write. `errorCode()` gives the reason. |
 | `ValidationException` | HTTP 422. `errors()` gives the messages for each field. |
 | `RateLimitException` | HTTP 429. `retryAfter()` gives the seconds to wait. `limit()` and `remaining()` give the rate limit headers. |
-| `ServerException` | HTTP 5xx. A 500 from `snaps()->create()` has the code `internal_error`. |
+| `ServerException` | HTTP 5xx. A 500 from `snaps()->create()` or `batches()->create()` has the code `internal_error`. |
 | `ApiException` | Another 4xx status. It is the parent of the HTTP exceptions above. |
 | `ConnectionException` | The SDK did not get a response. |
 | `UnexpectedResponseException` | The body does not have the expected shape. |

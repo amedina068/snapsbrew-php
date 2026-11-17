@@ -93,6 +93,26 @@ function snapPayload(array $overrides = []): array
 }
 
 /**
+ * The exact body of `POST /v1/media` and of each item of `GET /v1/media`.
+ *
+ * @return array<string, mixed>
+ */
+function mediaPayload(array $overrides = []): array
+{
+    return $overrides + [
+        'id' => 12,
+        'uuid' => '5b0c7a52-3f9e-4a8d-9c1e-2d7f6b4e8a10',
+        'name' => 'logo',
+        'file_name' => 'logo.png',
+        'mime_type' => 'image/png',
+        'size' => 68,
+        'original_url' => 'https://x/logo.png',
+        'src' => 'https://x/logo.jpg',
+        'created_at' => '2026-05-01T12:00:00Z',
+    ];
+}
+
+/**
  * @return array<string, mixed>
  */
 function batchPayload(array $overrides = []): array
