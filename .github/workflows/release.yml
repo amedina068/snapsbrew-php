@@ -1,0 +1,71 @@
+# Prepares a release. This workflow runs only by hand.
+#
+# It does the checks, then creates a git tag and a GitHub release.
+# It does not publish the package to Packagist.
+#
+# To publish to Packagist later:
+#   1. Choose a license and add it to the package.
+#   2. Add the repository to Packagist.
+#   3. Add the Packagist API token as the repository secret PACKAGIST_TOKEN.
+#   4. Remove the comment marks of the "Notify Packagist" step below.
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version to release, for example 0.1.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Make sure that the version is valid
+        run: |
+          echo "${{ inputs.version }}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
+          grep -q "const VERSION = '${{ inputs.version }}'" src/Snapsbrew.php
+          grep -q "## \[${{ inputs.version }}\]" CHANGELOG.md
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install the dependencies
+        run: composer update --prefer-dist --no-interaction
+
+      - name: Run the checks
+        run: |
+          # Not --strict: the package has no license field yet, and --strict fails on that warning.
+          composer validate --no-check-lock
+          vendor/bin/pint --test
+          vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+          vendor/bin/pest
+
+      - name: Create the tag and the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ inputs.version }}" \
+            --title "v${{ inputs.version }}" \
+            --notes "Read CHANGELOG.md for the changes in this version." \
+            --target "${{ github.sha }}"
+
+      # - name: Notify Packagist
+      #   env:
+      #     PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+      #   run: |
+      #     curl --fail -X POST -H 'Content-Type: application/json' \
+      #       "https://packagist.org/api/update-package?username=amedina068&apiToken=${PACKAGIST_TOKEN}" \
+      #       -d '{"repository":{"url":"https://github.com/amedina068/snapsbrew-php"}}'

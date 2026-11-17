@@ -1,0 +1,65 @@
+{
+    "name": "snapsbrew/snapsbrew-php",
+    "description": "PHP client and Laravel integration for a self-hosted Snapsbrew instance.",
+    "type": "library",
+    "keywords": ["snapsbrew", "images", "templates", "og-image", "laravel", "sdk"],
+    "homepage": "https://github.com/amedina068/snapsbrew-php",
+    "require": {
+        "php": "^8.2",
+        "php-http/discovery": "^1.19",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^1.1|^2.0"
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "^7.9|^8.0",
+        "larastan/larastan": "^3.4",
+        "laravel/pint": "^1.18",
+        "orchestra/testbench": "^9.15|^10.12|^11.3",
+        "pestphp/pest": "^3.8|^4.0|^5.0",
+        "phpstan/phpstan": "^2.1"
+    },
+    "suggest": {
+        "guzzlehttp/guzzle": "The default PSR-18 HTTP client. The SDK reads the timeout setting when it creates a Guzzle client.",
+        "laravel/framework": "Use the service provider, the facade, the fake and the Blade component."
+    },
+    "conflict": {
+        "laravel/framework": "<11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Snapsbrew\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Snapsbrew\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "test:integration": "pest --group=integration",
+        "lint": "pint --test",
+        "format": "pint",
+        "analyse": "phpstan analyse --memory-limit=1G"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Snapsbrew\\Laravel\\SnapsbrewServiceProvider"
+            ],
+            "aliases": {
+                "Snapsbrew": "Snapsbrew\\Laravel\\Facades\\Snapsbrew"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": false
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
