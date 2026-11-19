@@ -15,6 +15,7 @@ use Snapsbrew\Http\HttpClientFactory;
 use Snapsbrew\Http\RetryPolicy;
 use Snapsbrew\Http\Transport;
 use Snapsbrew\Resources\Batches;
+use Snapsbrew\Resources\Documents;
 use Snapsbrew\Resources\Guides;
 use Snapsbrew\Resources\Media;
 use Snapsbrew\Resources\Screenshots;
@@ -37,7 +38,7 @@ use Snapsbrew\Signing\UrlSigner;
  */
 class Snapsbrew
 {
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.2.0';
 
     /**
      * The URL of the instance, with no trailing slash and no `/api` suffix.
@@ -90,6 +91,14 @@ class Snapsbrew
     public function templates(): Templates
     {
         return new Templates($this->transport);
+    }
+
+    /**
+     * The v2 editor documents of the templates.
+     */
+    public function documents(): Documents
+    {
+        return new Documents($this->transport);
     }
 
     public function snaps(): Snaps

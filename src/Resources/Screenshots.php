@@ -49,7 +49,9 @@ final readonly class Screenshots
 
     /**
      * Capture a web page. The instance uses a 1330x780 viewport when you do
-     * not give a size.
+     * not give a size. The width and the height are 1 to 4000 pixels. The
+     * SDK does not check them, so a value out of range gives a
+     * `ValidationException`.
      */
     public function create(string $url, ?int $width = null, ?int $height = null): Screenshot
     {

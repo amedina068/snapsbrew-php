@@ -6,6 +6,10 @@ namespace Snapsbrew\Exceptions;
 
 /**
  * HTTP 422: the instance refused the input.
+ *
+ * A form error has a message for each field in `errors()`. A rejected editor
+ * operation has no field errors. It has a code in `errorCode()`, for example
+ * `editor_operation_layer_not_found`.
  */
 final class ValidationException extends ApiException
 {

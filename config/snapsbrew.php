@@ -55,4 +55,20 @@ return [
 
     'retries' => (int) env('SNAPSBREW_RETRIES', 2),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Webhooks
+    |--------------------------------------------------------------------------
+    |
+    | The webhook signing secret of your company, with its "whsec_" prefix.
+    | Account > Developers shows it. The tolerance is the maximum difference
+    | in seconds between the signing time and the current time.
+    |
+    */
+
+    'webhook' => [
+        'secret' => env('SNAPSBREW_WEBHOOK_SECRET'),
+        'tolerance' => (int) env('SNAPSBREW_WEBHOOK_TOLERANCE', 300),
+    ],
+
 ];

@@ -19,6 +19,11 @@ final class MissingCredentialsException extends SnapsbrewException
         return new self('Set a signing key to build signed URLs. In Laravel, set SNAPSBREW_SIGNING_KEY.');
     }
 
+    public static function webhookSecret(): self
+    {
+        return new self('Set the webhook signing secret to verify webhooks. In Laravel, set SNAPSBREW_WEBHOOK_SECRET.');
+    }
+
     public static function url(): self
     {
         return new self('Set the URL of your Snapsbrew instance. In Laravel, set SNAPSBREW_URL.');

@@ -32,6 +32,10 @@ final readonly class Media
     /**
      * Upload an image from a file path or from an open stream.
      *
+     * The instance accepts jpg, jpeg, png, gif, webp and bmp files up to
+     * 10 MB. It refuses SVG files. The SDK does not check the file, so a
+     * refused file gives a `ValidationException`.
+     *
      * @param  string|resource  $file
      */
     public function upload(mixed $file, ?string $filename = null): MediaItem

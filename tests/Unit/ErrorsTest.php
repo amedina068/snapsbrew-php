@@ -15,6 +15,7 @@ use Snapsbrew\Exceptions\RateLimitException;
 use Snapsbrew\Exceptions\ServerException;
 use Snapsbrew\Exceptions\SnapsbrewException;
 use Snapsbrew\Exceptions\ValidationException;
+use Snapsbrew\Snapsbrew;
 
 it('throws a typed exception for each status', function (int $status, string $class, string $message) {
     $client = snapsbrew([json(['message' => $message], $status, ['X-Request-Uuid' => 'req-1'])]);
@@ -90,7 +91,7 @@ it('gives the code of a conflict', function () {
         snapsbrew([json(['code' => 'editor_document_conflict'], 409)])->account();
     } catch (ConflictException $exception) {
         expect($exception->errorCode())->toBe('editor_document_conflict')
-            ->and($exception->getMessage())->toBe('The Snapsbrew instance answered with HTTP status 409.');
+            ->and($exception->getMessage())->toBe('The Snapsbrew instance answered with HTTP status 409 (editor_document_conflict).');
 
         return;
     }
@@ -221,4 +222,93 @@ it('knows when a connection error happened before the request was sent', functio
     'connect timeout' => ['cURL error 28: Connection timed out after 10001 milliseconds', false],
     'read timeout' => ['cURL error 28: Operation timed out after 30001 milliseconds with 0 bytes received', true],
     'reset' => ['cURL error 56: Recv failure: Connection reset by peer', true],
+]);
+
+it('maps a 403 to the authorization error on every bearer operation', function (Closure $call) {
+    $client = snapsbrew([json(['message' => 'Invalid ability provided.'], 403)]);
+
+    try {
+        $call($client);
+    } catch (AuthorizationException $exception) {
+        expect($exception->getMessage())->toBe('Invalid ability provided.')
+            ->and($exception->status)->toBe(403);
+
+        return;
+    }
+
+    $this->fail('No authorization exception was thrown.');
+})->with([
+    'account' => [fn (Snapsbrew $client) => $client->account()],
+    'templates list' => [fn (Snapsbrew $client) => $client->templates()->list()],
+    'templates find' => [fn (Snapsbrew $client) => $client->templates()->find('tpl')],
+    'templates sizes' => [fn (Snapsbrew $client) => $client->templates()->sizes()],
+    'templates create' => [fn (Snapsbrew $client) => $client->templates()->create('Card', size: 'open_graph')],
+    'templates update' => [fn (Snapsbrew $client) => $client->templates()->update('tpl', 'Card')],
+    'templates delete' => [fn (Snapsbrew $client) => $client->templates()->delete('tpl')],
+    'templates publish' => [fn (Snapsbrew $client) => $client->templates()->publish('tpl')],
+    'templates preview' => [fn (Snapsbrew $client) => $client->templates()->preview('tpl')],
+    'documents find' => [fn (Snapsbrew $client) => $client->documents()->find('tpl')],
+    'documents replace' => [fn (Snapsbrew $client) => $client->documents()->replace('tpl', [], revision: 1)],
+    'documents apply' => [fn (Snapsbrew $client) => $client->documents()->apply('tpl', [], revision: 1)],
+    'documents preflight' => [fn (Snapsbrew $client) => $client->documents()->preflight('tpl')],
+    'snaps create' => [fn (Snapsbrew $client) => $client->snaps()->create('tpl')],
+    'snaps collection' => [fn (Snapsbrew $client) => $client->snaps()->createFromCollection('col')],
+    'snaps preview' => [fn (Snapsbrew $client) => $client->snaps()->preview('tpl')],
+    'batches create' => [fn (Snapsbrew $client) => $client->batches()->create('tpl', [[]])],
+    'batches find' => [fn (Snapsbrew $client) => $client->batches()->find('batch')],
+    'batches cancel' => [fn (Snapsbrew $client) => $client->batches()->cancel('batch')],
+    'screenshots list' => [fn (Snapsbrew $client) => $client->screenshots()->list()],
+    'screenshots find' => [fn (Snapsbrew $client) => $client->screenshots()->find('shot')],
+    'screenshots create' => [fn (Snapsbrew $client) => $client->screenshots()->create('https://example.com')],
+    'media list' => [fn (Snapsbrew $client) => $client->media()->list()],
+    'media upload' => [fn (Snapsbrew $client) => $client->media()->upload(__FILE__)],
+    'guides design' => [fn (Snapsbrew $client) => $client->guides()->design()],
+    'guides platform' => [fn (Snapsbrew $client) => $client->guides()->platform('instagram')],
+    'tags list' => [fn (Snapsbrew $client) => $client->tags()->list()],
+    'tags create' => [fn (Snapsbrew $client) => $client->tags()->create('Launch')],
+    'tags sync' => [fn (Snapsbrew $client) => $client->tags()->sync('tpl', [1])],
+]);
+
+it('does not read the text of a 404 message', function () {
+    try {
+        snapsbrew([json(['message' => 'No query results for model [App\\Models\\Template].'], 404)])->templates()->find('tpl');
+    } catch (NotFoundException $exception) {
+        expect($exception->getMessage())->toBe('No query results for model [App\\Models\\Template].')
+            ->and($exception->available())->toBe([]);
+
+        return;
+    }
+
+    $this->fail('No not found exception was thrown.');
+});
+
+it('gives the valid keys of a guide that does not exist', function (string $method) {
+    $available = ['instagram', 'linkedin', 'x'];
+
+    try {
+        snapsbrew([json(['message' => 'No platform guide matches `nope`.', 'available' => $available], 404)])->guides()->{$method}('nope');
+    } catch (NotFoundException $exception) {
+        expect($exception->available())->toBe($available);
+
+        return;
+    }
+
+    $this->fail('No not found exception was thrown.');
+})->with(['platform', 'purpose']);
+
+it('throws a validation error for a bad cursor', function (Closure $call) {
+    $client = snapsbrew([json(['message' => 'The cursor is not valid.', 'errors' => ['cursor' => ['The cursor is not valid.']]], 422)]);
+
+    try {
+        $call($client);
+    } catch (ValidationException $exception) {
+        expect($exception->first('cursor'))->toBe('The cursor is not valid.');
+
+        return;
+    }
+
+    $this->fail('No validation exception was thrown.');
+})->with([
+    'templates' => [fn (Snapsbrew $client) => $client->templates()->list('bad')],
+    'screenshots' => [fn (Snapsbrew $client) => $client->screenshots()->list('bad')],
 ]);

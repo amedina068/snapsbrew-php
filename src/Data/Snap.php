@@ -14,6 +14,23 @@ use Snapsbrew\Exceptions\UnexpectedResponseException;
 final readonly class Snap
 {
     /**
+     * The render failed. The snap has no image.
+     */
+    public const ERROR_RENDER_FAILED = 'render_failed';
+
+    /**
+     * The webhook receiver answered with a redirect. The instance does not follow it.
+     */
+    public const ERROR_WEBHOOK_REDIRECT_REFUSED = 'webhook_redirect_refused';
+
+    /**
+     * The instance did not get a connection to the webhook receiver.
+     */
+    public const ERROR_WEBHOOK_UNREACHABLE = 'webhook_unreachable';
+
+    /**
+     * @param  string|null  $mediaUrl  The image URL. It is null until the render completes, and after a failed render.
+     * @param  string|null  $lastError  A fixed error code: one of the `ERROR_` constants, or `webhook_http_<status>` when the webhook receiver answered with an error status.
      * @param  array<array-key, mixed>  $variants  The variants that the render used.
      */
     public function __construct(
@@ -46,7 +63,7 @@ final readonly class Snap
             id: $payload->string('id'),
             status: Status::tryFrom($payload->string('status')) ?? throw UnexpectedResponseException::field('status', 'status'),
             type: $payload->nullableString('type') ?? 'image',
-            mediaUrl: $payload->nullableString('media_url'),
+            mediaUrl: $payload->nullableString('media_url') ?: null,
             width: $payload->nullableInt('width'),
             height: $payload->nullableInt('height'),
             isAsync: $payload->bool('is_async'),

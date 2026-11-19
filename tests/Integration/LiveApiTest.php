@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SNAPSBREW_TEST_URL and SNAPSBREW_TEST_TOKEN are set.
  *
  * The tests are read-only: they read the account, list the templates and
- * request one preview. A preview costs no credit and stores nothing.
+ * request one preview. A preview stores nothing.
  */
 
 use Snapsbrew\Snapsbrew;

@@ -18,8 +18,11 @@ use Stringable;
  *         ->url();
  *
  * A signed URL renders an image from a plain `<img src>` or an `og:image`
- * tag, with no API call. The first request renders the image and uses one
- * credit. The instance caches the image for later requests with the same URL.
+ * tag, with no API call. The first request renders the image. The instance
+ * caches the image for later requests with the same URL.
+ *
+ * The instance accepts a signature from any active signing key of the
+ * company that owns the template.
  */
 final class PendingSignedUrl implements Stringable
 {

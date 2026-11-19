@@ -13,6 +13,7 @@ use Snapsbrew\Snapsbrew as Client;
 /**
  * @method static \Snapsbrew\Data\Account account()
  * @method static \Snapsbrew\Resources\Templates templates()
+ * @method static \Snapsbrew\Resources\Documents documents()
  * @method static \Snapsbrew\Resources\Snaps snaps()
  * @method static \Snapsbrew\Resources\Batches batches()
  * @method static \Snapsbrew\Resources\Screenshots screenshots()

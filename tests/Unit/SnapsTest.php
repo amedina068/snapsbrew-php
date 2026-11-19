@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use GuzzleHttp\Psr7\Response;
+use Snapsbrew\Data\Snap;
 use Snapsbrew\Enums\Status;
 use Snapsbrew\Variants;
 
@@ -100,4 +101,35 @@ it('previews a snap', function () {
     expect($preview->html)->toBe('<html>watermarked</html>')
         ->and($history[0]['request']->getUri()->getPath())->toBe('/api/v1/snaps/preview')
         ->and($query)->toBe(['template_id' => 'tpl', 'variants' => [['layer' => 'title', 'text' => 'Hi']]]);
+});
+
+it('reads the error code of a failed snap', function (string $code) {
+    $snap = snapsbrew([json(snapPayload(['status' => 'failed', 'media_url' => '', 'last_error' => $code]))])
+        ->snaps()->create('tpl');
+
+    expect($snap->isFailed())->toBeTrue()
+        ->and($snap->lastError)->toBe($code)
+        ->and($snap->mediaUrl)->toBeNull();
+})->with([
+    Snap::ERROR_RENDER_FAILED,
+    Snap::ERROR_WEBHOOK_REDIRECT_REFUSED,
+    Snap::ERROR_WEBHOOK_UNREACHABLE,
+    'webhook_http_500',
+]);
+
+it('names the error codes of a snap', function () {
+    expect([
+        Snap::ERROR_RENDER_FAILED,
+        Snap::ERROR_WEBHOOK_REDIRECT_REFUSED,
+        Snap::ERROR_WEBHOOK_UNREACHABLE,
+    ])->toBe(['render_failed', 'webhook_redirect_refused', 'webhook_unreachable']);
+});
+
+it('reads the error code of a failed batch item', function () {
+    $batch = snapsbrew([json(batchPayload(['status' => 'completed', 'items' => [
+        ['id' => 'a', 'identifier' => 'item_1', 'status' => 'failed', 'media_url' => '', 'last_error' => 'render_failed'],
+    ]]))])->batches()->find('batch');
+
+    expect($batch->items[0]->lastError)->toBe(Snap::ERROR_RENDER_FAILED)
+        ->and($batch->items[0]->mediaUrl)->toBeNull();
 });

@@ -18,7 +18,7 @@ final readonly class Snaps
     public function __construct(private Transport $transport) {}
 
     /**
-     * Render one template. This call uses one credit.
+     * Render one template.
      *
      * The instance renders the published version of the template. With
      * `async: true`, the instance queues the render and posts the result to
@@ -52,8 +52,8 @@ final readonly class Snaps
     }
 
     /**
-     * Render every template of a collection. This call uses one credit for
-     * each template. The instance does not accept an idempotency key here.
+     * Render every template of a collection, one snap for each template. The
+     * instance does not accept an idempotency key here.
      *
      * @param  Variants|iterable<array<string, mixed>>  $variants
      * @return list<Snap>
@@ -84,7 +84,7 @@ final readonly class Snaps
     }
 
     /**
-     * A watermarked HTML preview of the snap. A preview costs no credit.
+     * A watermarked HTML preview of the snap. The instance does not store it.
      * Give the same variants to `create()` to render the final image.
      *
      * @param  Variants|iterable<array<string, mixed>>  $variants

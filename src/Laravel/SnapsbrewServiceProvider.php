@@ -9,6 +9,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
 use Snapsbrew\Snapsbrew;
+use Snapsbrew\Webhooks\Webhook;
 
 final class SnapsbrewServiceProvider extends ServiceProvider
 {
@@ -29,6 +30,15 @@ final class SnapsbrewServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(Snapsbrew::class, 'snapsbrew');
+
+        $this->app->singleton(Webhook::class, static function (Application $app): Webhook {
+            $config = $app->make(Repository::class);
+
+            return new Webhook(
+                secret: self::string($config->get('snapsbrew.webhook.secret')) ?? '',
+                tolerance: is_numeric($tolerance = $config->get('snapsbrew.webhook.tolerance')) ? (int) $tolerance : 300,
+            );
+        });
     }
 
     public function boot(): void

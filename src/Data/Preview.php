@@ -7,8 +7,7 @@ namespace Snapsbrew\Data;
 use Stringable;
 
 /**
- * A watermarked HTML preview of a render. A preview costs no credit, and the
- * instance does not store it.
+ * A watermarked HTML preview of a render. The instance does not store it.
  */
 final readonly class Preview implements Stringable
 {

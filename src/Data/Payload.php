@@ -113,6 +113,14 @@ final readonly class Payload
     }
 
     /**
+     * @return array<array-key, mixed>|null
+     */
+    public function nullableArray(string $key): ?array
+    {
+        return ($this->data[$key] ?? null) === null ? null : $this->array($key);
+    }
+
+    /**
      * The list of JSON objects under one key.
      *
      * @return list<array<array-key, mixed>>

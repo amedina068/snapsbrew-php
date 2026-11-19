@@ -69,6 +69,14 @@ final readonly class Transport
         return $this->send('PATCH', $path, body: $this->encode($data));
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function put(string $path, array $data = []): Response
+    {
+        return $this->send('PUT', $path, body: $this->encode($data));
+    }
+
     public function delete(string $path): Response
     {
         return $this->send('DELETE', $path);

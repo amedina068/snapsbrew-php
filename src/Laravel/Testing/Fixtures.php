@@ -27,6 +27,10 @@ final class Fixtures
             $request->is('GET', 'v1/templates') => new FakeResponse(['data' => [self::template(self::TEMPLATE_ID)], 'meta' => ['previous_cursor' => null, 'next_cursor' => null]]),
             $request->is('GET', 'v1/templates/sizes') => self::data([['size' => 'open_graph', 'name' => 'Open Graph / Link Preview (1200x630)', 'platform' => 'Web & email', 'width' => 1200, 'height' => 630, 'aspect_ratio' => '1.9:1', 'safe_margin_px' => 47]]),
             $request->is('GET', 'v1/templates/*/preview'), $request->is('GET', 'v1/snaps/preview') => self::preview(),
+            $request->is('GET', 'v1/templates/*/document/preflight') => new FakeResponse(['issues' => [], 'revision' => 1]),
+            $request->is('GET', 'v1/templates/*/document') => new FakeResponse(['document' => self::document(), 'revision' => 1]),
+            $request->is('PUT', 'v1/templates/*/document') => self::savedDocument($request, is_array($request['document']) ? $request['document'] : self::document()),
+            $request->is('PATCH', 'v1/templates/*/document') => self::savedDocument($request, self::document()),
             $request->is('GET', 'v1/templates/*') => self::data(self::template($segments[2] ?? self::TEMPLATE_ID) + ['published_version' => 1, 'has_unpublished_edits' => false]),
             $request->is('POST', 'v1/templates') => self::data(self::summary(self::uuid(), $request), 'Template created successfully'),
             $request->is('PATCH', 'v1/templates/*') => self::data(self::summary($segments[2] ?? self::TEMPLATE_ID, $request), 'Template updated successfully'),
@@ -47,6 +51,30 @@ final class Fixtures
             $request->is('POST', 'v1/tags') => new FakeResponse(['data' => ['id' => 1, 'name' => self::string($request['name']) ?? 'Tag', 'slug' => 'tag']], 201),
             default => new FakeResponse(['message' => 'Not found.'], 404),
         };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function document(): array
+    {
+        return [
+            'version' => 2,
+            'layers' => [['key' => 'title', 'type' => 'text', 'properties' => [['name' => 'text', 'value' => 'Hello']]]],
+            'groups' => [],
+        ];
+    }
+
+    /**
+     * A saved document gets the next revision.
+     *
+     * @param  array<array-key, mixed>  $document
+     */
+    private static function savedDocument(RecordedRequest $request, array $document): FakeResponse
+    {
+        $revision = is_numeric($request['revision']) ? (int) $request['revision'] : 0;
+
+        return new FakeResponse(['document' => $document, 'revision' => $revision + 1]);
     }
 
     private static function snaps(RecordedRequest $request): FakeResponse

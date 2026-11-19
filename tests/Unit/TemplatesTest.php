@@ -150,3 +150,28 @@ it('previews a template with variants in the query string', function () {
         ->and((string) $preview)->toBe('<html>preview</html>')
         ->and($query['variants'])->toBe([['layer' => 'headline', 'text' => 'Hello'], ['layer' => 'badge', 'hidden' => '1']]);
 });
+
+it('sends the layer groups of a new template', function () {
+    $history = [];
+    $groups = [
+        ['id' => 'header', 'name' => 'Header', 'visible' => true, 'collapsed' => false, 'order' => 1],
+        ['id' => 'footer'],
+    ];
+
+    snapsbrew([json(['data' => ['uuid' => 'new', 'title' => 'Card', 'size' => 'open_graph', 'width' => 1200, 'height' => 630, 'created_at' => null]])], $history)
+        ->templates()->create('Card', size: 'open_graph', groups: $groups);
+
+    expect(body($history[0]['request']))->toBe(['title' => 'Card', 'size' => 'open_graph', 'groups' => $groups]);
+});
+
+it('replaces or removes the layer groups of a template', function (array $groups) {
+    $history = [];
+
+    snapsbrew([json(['data' => ['uuid' => 'u', 'title' => 'Card', 'size' => 'open_graph', 'width' => 1200, 'height' => 630, 'created_at' => null]])], $history)
+        ->templates()->update('u', 'Card', groups: $groups);
+
+    expect(body($history[0]['request']))->toBe(['title' => 'Card', 'groups' => $groups]);
+})->with([
+    'replace' => [[['id' => 'header', 'order' => 2]]],
+    'remove' => [[]],
+]);

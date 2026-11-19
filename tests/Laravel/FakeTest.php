@@ -158,3 +158,17 @@ it('keeps signed URLs working with the configured key', function () {
 
     expect(Snapsbrew::signedUrl('tpl')->url())->toStartWith('https://snapsbrew.test/signed-url/image.jpg?template_id=tpl&signature=');
 });
+
+it('answers the editor document endpoints with sample data', function () {
+    Snapsbrew::fake();
+
+    $document = Snapsbrew::documents()->find('tpl');
+    $replaced = Snapsbrew::documents()->replace('tpl', ['version' => 2, 'layers' => [], 'groups' => []], revision: $document->revision);
+    $applied = Snapsbrew::documents()->apply('tpl', [], revision: $replaced->revision);
+
+    expect($document->revision)->toBe(1)
+        ->and($replaced->revision)->toBe(2)
+        ->and($replaced->document)->toBe(['version' => 2, 'layers' => [], 'groups' => []])
+        ->and($applied->revision)->toBe(3)
+        ->and(Snapsbrew::documents()->preflight('tpl')->passes())->toBeTrue();
+});

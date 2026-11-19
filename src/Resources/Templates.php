@@ -77,6 +77,7 @@ final readonly class Templates
      * Create a template. Give a `size` preset, or a `width` and a `height`.
      *
      * @param  list<array<string, mixed>>|null  $layers  The layer definitions. The layers guide describes them.
+     * @param  list<array<string, mixed>>|null  $groups  The layer groups. Each group has an `id`, and optional `name`, `visible`, `collapsed` and `order`.
      */
     public function create(
         string $title,
@@ -84,6 +85,7 @@ final readonly class Templates
         ?int $width = null,
         ?int $height = null,
         ?array $layers = null,
+        ?array $groups = null,
     ): Template {
         $response = $this->transport->post('v1/templates', self::filter([
             'title' => $title,
@@ -91,6 +93,7 @@ final readonly class Templates
             'width' => $width,
             'height' => $height,
             'layers' => $layers,
+            'groups' => $groups,
         ]));
 
         return Template::fromArray($response->data());
@@ -102,6 +105,7 @@ final readonly class Templates
      *
      * @param  string|int  $template  The UUID or the numeric ID of the template.
      * @param  list<array<string, mixed>>|null  $layers
+     * @param  list<array<string, mixed>>|null  $groups  The new layer groups. An empty list removes every group.
      */
     public function update(
         string|int $template,
@@ -110,6 +114,7 @@ final readonly class Templates
         ?int $width = null,
         ?int $height = null,
         ?array $layers = null,
+        ?array $groups = null,
     ): Template {
         $response = $this->transport->patch('v1/templates/'.rawurlencode((string) $template), self::filter([
             'title' => $title,
@@ -117,13 +122,15 @@ final readonly class Templates
             'width' => $width,
             'height' => $height,
             'layers' => $layers,
+            'groups' => $groups,
         ]));
 
         return Template::fromArray($response->data());
     }
 
     /**
-     * Delete a template.
+     * Delete a template. The instance also deletes its snaps, images,
+     * versions and forms.
      *
      * @param  string|int  $template  The UUID or the numeric ID of the template.
      */
@@ -145,7 +152,7 @@ final readonly class Templates
     }
 
     /**
-     * A watermarked HTML preview of a template. A preview costs no credit.
+     * A watermarked HTML preview of a template. The instance does not store it.
      *
      * @param  Variants|iterable<array<string, mixed>>  $variants
      */

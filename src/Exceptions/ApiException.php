@@ -69,10 +69,14 @@ class ApiException extends SnapsbrewException
 
     private static function messageFrom(Response $response): string
     {
-        $message = $response->jsonOrEmpty()['message'] ?? null;
+        $body = $response->jsonOrEmpty();
+        $message = $body['message'] ?? null;
+        $code = $body['code'] ?? null;
 
-        return is_string($message) && $message !== ''
-            ? $message
-            : "The Snapsbrew instance answered with HTTP status {$response->status}.";
+        return match (true) {
+            is_string($message) && $message !== '' => $message,
+            is_string($code) && $code !== '' => "The Snapsbrew instance answered with HTTP status {$response->status} ({$code}).",
+            default => "The Snapsbrew instance answered with HTTP status {$response->status}.",
+        };
     }
 }
