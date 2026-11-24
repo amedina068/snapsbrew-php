@@ -20,6 +20,7 @@ use Snapsbrew\Snapsbrew as Client;
  * @method static \Snapsbrew\Resources\Media media()
  * @method static \Snapsbrew\Resources\Guides guides()
  * @method static \Snapsbrew\Resources\Tags tags()
+ * @method static \Snapsbrew\Resources\Forms forms()
  * @method static \Snapsbrew\Signing\PendingSignedUrl signedUrl(string $templateId)
  * @method static SnapsbrewFake stub(string $pattern, mixed $response)
  * @method static list<\Snapsbrew\Laravel\Testing\RecordedRequest> recorded(callable|null $callback = null)

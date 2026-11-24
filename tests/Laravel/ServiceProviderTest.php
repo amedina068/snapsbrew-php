@@ -12,7 +12,7 @@ use Snapsbrew\Snapsbrew;
 use Snapsbrew\Webhooks\Webhook;
 
 it('merges the package configuration', function () {
-    expect(config('snapsbrew.timeout'))->toBe(30.0)
+    expect(config('snapsbrew.timeout'))->toBe(60.0)
         ->and(config('snapsbrew.retries'))->toBe(2)
         ->and(config('snapsbrew.url'))->toBe('https://snapsbrew.test');
 });

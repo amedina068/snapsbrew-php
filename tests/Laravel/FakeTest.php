@@ -44,7 +44,7 @@ it('answers each endpoint with sample data', function () {
         ->and(Snapsbrew::snaps()->preview('tpl')->html)->toContain('preview')
         ->and(Snapsbrew::snaps()->create('tpl', async: true, webhookUrl: 'https://example.com/hook')->isPending())->toBeTrue()
         ->and(Snapsbrew::snaps()->createFromCollection('col'))->toHaveCount(1)
-        ->and(Snapsbrew::tags()->sync('tpl', [1, 2]))->toHaveCount(2)
+        ->and(Snapsbrew::templates()->setTags('tpl', [1, 2]))->toHaveCount(2)
         ->and(Snapsbrew::media()->list()->total)->toBe(0)
         ->and(Snapsbrew::guides()->design()->data)->toBe([]);
 });
@@ -163,8 +163,8 @@ it('answers the editor document endpoints with sample data', function () {
     Snapsbrew::fake();
 
     $document = Snapsbrew::documents()->find('tpl');
-    $replaced = Snapsbrew::documents()->replace('tpl', ['version' => 2, 'layers' => [], 'groups' => []], revision: $document->revision);
-    $applied = Snapsbrew::documents()->apply('tpl', [], revision: $replaced->revision);
+    $replaced = Snapsbrew::documents()->replace('tpl', revision: $document->revision, document: ['version' => 2, 'layers' => [], 'groups' => []]);
+    $applied = Snapsbrew::documents()->apply('tpl', revision: $replaced->revision, operations: []);
 
     expect($document->revision)->toBe(1)
         ->and($replaced->revision)->toBe(2)

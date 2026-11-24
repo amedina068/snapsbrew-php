@@ -26,6 +26,14 @@ final class WebhookVerificationException extends SnapsbrewException
         );
     }
 
+    public static function invalidTimestamp(): self
+    {
+        return new self(
+            'The webhook timestamp header is missing or is not Unix seconds.',
+            VerificationFailure::Timestamp,
+        );
+    }
+
     public static function timestampOutsideTolerance(int $tolerance): self
     {
         return new self(

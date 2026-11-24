@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace Snapsbrew\Webhooks;
 
 /**
- * The reason why a webhook delivery is not valid.
+ * The reason why a webhook delivery is not valid. The JS, Python and Ruby
+ * SDKs use the same three values: `signature`, `timestamp` and `payload`.
  */
 enum VerificationFailure: string
 {
     /**
-     * The signature or the timestamp header is missing, or the signature does
-     * not match the body.
+     * The signature header is missing, or the signature does not match the
+     * body.
      */
     case Signature = 'signature';
 
     /**
-     * The instance signed the delivery outside the tolerance.
+     * The timestamp header is missing, is not Unix seconds, or is outside the
+     * tolerance.
      */
     case Timestamp = 'timestamp';
 

@@ -8,6 +8,7 @@ use Snapsbrew\Exceptions\ConflictException;
 use Snapsbrew\Exceptions\ConnectionException;
 use Snapsbrew\Exceptions\RateLimitException;
 use Snapsbrew\Exceptions\ServerException;
+use Snapsbrew\Exceptions\SnapsbrewException;
 use Snapsbrew\Http\Response;
 use Snapsbrew\Http\RetryPolicy;
 
@@ -174,7 +175,7 @@ it('does not retry an in-progress conflict for a request with no idempotency key
     $history = [];
     $client = snapsbrew([json(['code' => 'idempotency_key_in_progress'], 409), json([], 200)], $history, noSleep(2));
 
-    expect(fn () => $client->tags()->sync('tpl', [1]))->toThrow(ConflictException::class)
+    expect(fn () => $client->templates()->setTags('tpl', [1]))->toThrow(ConflictException::class)
         ->and($history)->toHaveCount(1);
 });
 
@@ -215,4 +216,40 @@ it('sleeps for real when no sleep callback is given', function () {
     (new RetryPolicy)->sleep(20);
 
     expect(microtime(true) - $start)->toBeGreaterThanOrEqual(0.015);
+});
+
+it('never retries a document replace after a server error or a timeout', function (mixed $failure) {
+    $history = [];
+    $client = snapsbrew([$failure, json(['revision' => 5, 'document' => null])], $history, noSleep(2));
+
+    expect(fn () => $client->documents()->replace('tpl', revision: 4, document: []))->toThrow(SnapsbrewException::class)
+        ->and($history)->toHaveCount(1);
+})->with([
+    'server error' => [fn () => json(['message' => 'Error'], 502)],
+    'read timeout' => [fn () => readTimeout()],
+]);
+
+it('retries a template delete after a server error and a timeout', function () {
+    $history = [];
+    $client = snapsbrew([json([], 503), readTimeout(), json(['message' => 'Template deleted successfully'])], $history, noSleep(2));
+
+    $client->templates()->delete('tpl');
+
+    expect($history)->toHaveCount(3);
+});
+
+it('retries setting the tags of a template after a server error', function () {
+    $history = [];
+    $client = snapsbrew([json([], 502), json(['tags' => [['id' => 1, 'name' => 'Launch', 'slug' => 'launch']]])], $history, noSleep(1));
+
+    expect($client->templates()->setTags('tpl', [1]))->toHaveCount(1)
+        ->and($history)->toHaveCount(2);
+});
+
+it('never retries a template update after a server error', function () {
+    $history = [];
+    $client = snapsbrew([json([], 500), json([])], $history, noSleep(2));
+
+    expect(fn () => $client->templates()->update('tpl', title: 'Card'))->toThrow(ServerException::class)
+        ->and($history)->toHaveCount(1);
 });

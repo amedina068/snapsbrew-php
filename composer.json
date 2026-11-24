@@ -4,6 +4,7 @@
     "type": "library",
     "keywords": ["snapsbrew", "images", "templates", "og-image", "laravel", "sdk"],
     "homepage": "https://github.com/amedina068/snapsbrew-php",
+    "license": "MIT",
     "require": {
         "php": "^8.2",
         "php-http/discovery": "^1.19",

@@ -16,7 +16,7 @@ use Snapsbrew\Exceptions\UnexpectedResponseException;
 final readonly class BatchItem
 {
     /**
-     * @param  string|null  $mediaUrl  The image URL. It is null until the render completes, and after a failed render.
+     * @param  string|null  $mediaUrl  The image URL. It is null until the item completes.
      * @param  string|null  $lastError  The error code `render_failed` (`Snap::ERROR_RENDER_FAILED`) after a failed render, or null.
      */
     public function __construct(
@@ -38,7 +38,7 @@ final readonly class BatchItem
             id: $payload->string('id'),
             identifier: $payload->nullableString('identifier'),
             status: Status::tryFrom($payload->string('status')) ?? throw UnexpectedResponseException::field('status', 'status'),
-            mediaUrl: $payload->nullableString('media_url') ?: null,
+            mediaUrl: $payload->nullableString('media_url'),
             lastError: $payload->nullableString('last_error'),
         );
     }

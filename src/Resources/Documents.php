@@ -33,14 +33,18 @@ final readonly class Documents
      * Replace the whole document. A layer or a property that you leave out
      * is removed. To change some properties, use `apply()`.
      *
+     * The SDK never retries this write after a 5xx or a timeout. A repeat
+     * after a lost response gets a 409, because the first write changed the
+     * revision.
+     *
      * @param  array<array-key, mixed>  $document
      */
-    public function replace(string $templateUuid, array $document, int $revision): EditorDocument
+    public function replace(string $templateUuid, int $revision, array $document): EditorDocument
     {
         $response = $this->transport->put($this->path($templateUuid), [
             'revision' => $revision,
             'document' => $document,
-        ]);
+        ], idempotent: false);
 
         return EditorDocument::fromArray($response->json());
     }
@@ -54,7 +58,7 @@ final readonly class Documents
      *
      * @param  list<array<string, mixed>>  $operations
      */
-    public function apply(string $templateUuid, array $operations, int $revision): EditorDocument
+    public function apply(string $templateUuid, int $revision, array $operations): EditorDocument
     {
         $response = $this->transport->patch($this->path($templateUuid), [
             'revision' => $revision,

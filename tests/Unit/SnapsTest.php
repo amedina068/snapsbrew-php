@@ -109,7 +109,7 @@ it('reads the error code of a failed snap', function (string $code) {
 
     expect($snap->isFailed())->toBeTrue()
         ->and($snap->lastError)->toBe($code)
-        ->and($snap->mediaUrl)->toBeNull();
+        ->and($snap->mediaUrl)->toBe('');
 })->with([
     Snap::ERROR_RENDER_FAILED,
     Snap::ERROR_WEBHOOK_REDIRECT_REFUSED,
@@ -127,7 +127,7 @@ it('names the error codes of a snap', function () {
 
 it('reads the error code of a failed batch item', function () {
     $batch = snapsbrew([json(batchPayload(['status' => 'completed', 'items' => [
-        ['id' => 'a', 'identifier' => 'item_1', 'status' => 'failed', 'media_url' => '', 'last_error' => 'render_failed'],
+        ['id' => 'a', 'identifier' => 'item_1', 'status' => 'failed', 'media_url' => null, 'last_error' => 'render_failed'],
     ]]))])->batches()->find('batch');
 
     expect($batch->items[0]->lastError)->toBe(Snap::ERROR_RENDER_FAILED)

@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `forms()->submit($url, $layers)` sends the layers of an embedded form to its signed submit URL, as in the Ruby SDK. A string is text. A resource or an `SplFileInfo` is an image. It sends no token, so a client with no token can submit. A template form returns one `Snap`. A collection form returns a list of snaps. A 429 throws a `RateLimitException` with the code `rate_limited`, and the SDK retries it. The SDK does not retry a 5xx.
+- `templates()->setTags($uuid, $tagIds)` replaces the tags of a template, the same name as in the other SDKs.
+- `media()->upload()` also accepts an `SplFileInfo`, for example an uploaded file.
+- The webhook vectors have the expected `reason` of each invalid case and the `delivery_id` of each valid case.
+- The package is under the MIT License. `composer.json` has `"license": "MIT"`.
+
+### Changed
+
+- Breaking: `documents()->replace($uuid, $revision, $document)` and `documents()->apply($uuid, $revision, $operations)` take the revision before the document or the operations, the same order as in the other SDKs. Calls with named arguments do not change.
+- Breaking: `Snap::$mediaUrl` is the value that the instance sends. A failed snap has an empty string. It was null. `BatchItem::$mediaUrl` is also the value that the instance sends.
+- Breaking: the default timeout is 60 seconds. It was 30 seconds. A synchronous render can take that long, and the other SDKs use 60 seconds. `SNAPSBREW_TIMEOUT` still changes it.
+- A missing or malformed `X-Snapsbrew-Timestamp` header throws the reason `VerificationFailure::Timestamp`. It was `VerificationFailure::Signature`.
+- The webhook verifier accepts an uppercase hex signature. It changes the signature to lowercase before the constant-time compare.
+- An empty `X-Snapsbrew-Delivery` header gives a null `deliveryId`.
+- A signed body that is a JSON list throws the reason `VerificationFailure::Payload`.
+
+### Removed
+
+- Breaking: `tags()->sync()`. Use `templates()->setTags()`.
+
+### Fixed
+
+- `documents()->replace()` is no longer sent again after a 5xx or a timeout. A repeat after a lost response got a 409, because the first write changed the revision.
+
 ## [0.2.0] - Unreleased
 
 ### Added

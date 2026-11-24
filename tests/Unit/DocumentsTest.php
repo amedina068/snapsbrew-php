@@ -48,7 +48,7 @@ it('replaces the whole document', function () {
     $history = [];
 
     $document = snapsbrew([json(['document' => editorDocument(400), 'revision' => 5])], $history)
-        ->documents()->replace('tpl', editorDocument(400), revision: 4);
+        ->documents()->replace('tpl', revision: 4, document: editorDocument(400));
 
     expect($document->revision)->toBe(5)
         ->and($history[0]['request']->getMethod())->toBe('PUT')
@@ -64,7 +64,7 @@ it('applies a list of operations', function () {
     ];
 
     $document = snapsbrew([json(['document' => editorDocument(), 'revision' => 5])], $history)
-        ->documents()->apply('tpl', $operations, revision: 4);
+        ->documents()->apply('tpl', revision: 4, operations: $operations);
 
     expect($document->revision)->toBe(5)
         ->and($history[0]['request']->getMethod())->toBe('PATCH')
@@ -102,8 +102,8 @@ it('gives the current revision and document of a write conflict', function (stri
 
     try {
         $method === 'replace'
-            ? $client->documents()->replace('tpl', editorDocument(), revision: 4)
-            : $client->documents()->apply('tpl', [], revision: 4);
+            ? $client->documents()->replace('tpl', revision: 4, document: editorDocument())
+            : $client->documents()->apply('tpl', revision: 4, operations: []);
     } catch (ConflictException $exception) {
         expect($exception->errorCode())->toBe(ConflictException::EDITOR_DOCUMENT_CONFLICT)
             ->and($exception->currentRevision())->toBe(5)
@@ -133,7 +133,7 @@ it('gives null conflict fields for another conflict', function () {
 it('gives the code of a rejected operation', function () {
     try {
         snapsbrew([json(['code' => 'editor_operation_layer_not_found'], 422)])
-            ->documents()->apply('tpl', [['operation' => 'set_layer_type', 'layer_key' => 'nope', 'type' => 'text']], revision: 4);
+            ->documents()->apply('tpl', revision: 4, operations: [['operation' => 'set_layer_type', 'layer_key' => 'nope', 'type' => 'text']]);
     } catch (ValidationException $exception) {
         expect($exception->errorCode())->toBe('editor_operation_layer_not_found')
             ->and($exception->errors())->toBe([])
@@ -148,7 +148,7 @@ it('gives the code of a rejected operation', function () {
 it('gives the field errors of a document over a limit', function () {
     try {
         snapsbrew([json(['message' => 'The given data was invalid.', 'errors' => ['document' => ['editor_document_too_large']]], 422)])
-            ->documents()->replace('tpl', editorDocument(), revision: 4);
+            ->documents()->replace('tpl', revision: 4, document: editorDocument());
     } catch (ValidationException $exception) {
         expect($exception->first('document'))->toBe('editor_document_too_large')
             ->and($exception->errorCode())->toBeNull();
@@ -164,8 +164,8 @@ it('throws a not found error for a template of another company', function (strin
 
     match ($method) {
         'find' => $client->documents()->find('tpl'),
-        'replace' => $client->documents()->replace('tpl', editorDocument(), revision: 4),
-        'apply' => $client->documents()->apply('tpl', [], revision: 4),
+        'replace' => $client->documents()->replace('tpl', revision: 4, document: editorDocument()),
+        'apply' => $client->documents()->apply('tpl', revision: 4, operations: []),
         'preflight' => $client->documents()->preflight('tpl'),
     };
 })->with(['find', 'replace', 'apply', 'preflight'])->throws(NotFoundException::class);

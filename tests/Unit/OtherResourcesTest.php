@@ -180,7 +180,7 @@ describe('tags', function () {
     it('syncs the tags of a template', function () {
         $history = [];
         $tags = snapsbrew([json(['message' => 'Tags updated successfully.', 'tags' => [['id' => 1, 'name' => 'Launch', 'slug' => 'launch']]])], $history)
-            ->tags()->sync('tpl', [1]);
+            ->templates()->setTags('tpl', [1]);
 
         expect($tags)->toHaveCount(1)
             ->and(body($history[0]['request']))->toBe(['tag_ids' => [1]])

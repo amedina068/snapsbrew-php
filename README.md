@@ -89,7 +89,7 @@ file_put_contents('preview.html', $preview->html);
 | `url` | (required) | The URL of your instance. The SDK removes a trailing `/api`. |
 | `token` | `null` | An API token with the `api_requests` ability. The SDK sends it as `Authorization: Bearer`. |
 | `signingKey` | `null` | The key for signed image URLs. |
-| `timeout` | `30.0` | The request timeout in seconds. |
+| `timeout` | `60.0` | The request timeout in seconds. A synchronous render can take that long. The other SDKs use the same value. |
 | `retries` | `2` | The number of retries, or a `RetryPolicy`. |
 | `httpClient` | Guzzle, or discovery | Any PSR-18 client. |
 | `requestFactory`, `streamFactory` | discovery | PSR-17 factories. |
@@ -112,8 +112,8 @@ $snapsbrew->templates()->delete($uuid);
 $snapsbrew->templates()->preview($uuid, $variants);     // Preview (watermarked HTML)
 
 $snapsbrew->documents()->find($uuid);                   // EditorDocument
-$snapsbrew->documents()->replace($uuid, $document, revision: 4);
-$snapsbrew->documents()->apply($uuid, $operations, revision: 4);
+$snapsbrew->documents()->replace($uuid, revision: 4, document: $document);
+$snapsbrew->documents()->apply($uuid, revision: 4, operations: $operations);
 $snapsbrew->documents()->preflight($uuid);              // Preflight
 
 $snapsbrew->snaps()->create($templateId, $variants, format: 'webp');
@@ -134,7 +134,9 @@ $snapsbrew->media()->list($page = 1);                   // Page<Media>
 
 $snapsbrew->tags()->list('launch');
 $snapsbrew->tags()->create('Launch');
-$snapsbrew->tags()->sync($templateUuid, [1, 2]);
+$snapsbrew->templates()->setTags($templateUuid, [1, 2]);   // Replaces all tags
+
+$snapsbrew->forms()->submit($submitUrl, ['headline' => 'Hello']);   // Snap, or list<Snap>
 
 $snapsbrew->guides()->design();                         // Guide
 $snapsbrew->guides()->platform('instagram');
@@ -151,7 +153,7 @@ Some calls have rules that the instance checks. The SDK does not check them befo
 
 ### Failed snaps
 
-A failed snap has the status `failed` and a null `mediaUrl`. `$snap->lastError` holds a fixed code, never a raw error message:
+A failed snap has the status `failed` and an empty `mediaUrl` (`''`), the value that the instance sends. `$snap->lastError` holds a fixed code, never a raw error message:
 
 | Code | Cause |
 |---|---|
@@ -161,6 +163,24 @@ A failed snap has the status `failed` and a null `mediaUrl`. `$snap->lastError` 
 | `webhook_http_<status>` | The webhook receiver answered with this error status, for example `webhook_http_500`. |
 
 A batch item has `lastError` too. Its only code is `render_failed`.
+
+### Embedded forms
+
+An embedded form renders a snap from the values that a visitor sends. The form renders on the account of its owner, so the SDK sends no token to the submit URL. Copy the submit URL of the form from your instance. The URL carries its own signature.
+
+```php
+$snap = $snapsbrew->forms()->submit($submitUrl, [
+    'headline' => 'Hello',
+    'photo' => $request->file('photo'),
+]);
+```
+
+- A string is text. A resource or an `SplFileInfo`, for example an uploaded file, is an image.
+- A template form uses the layer key, for example `headline`. A collection form uses `{template uuid}__{layer key}` and returns a list of snaps.
+- A submit needs no token. A client with a URL and no token can submit a form.
+- If the signature is not valid, or the form does not exist, `submit()` throws a `NotFoundException`.
+- If one IP address or one form sends too many submissions in one minute, `submit()` throws a `RateLimitException` with the code `rate_limited`. The SDK retries it.
+- The SDK does not retry a submit after a 5xx, because each submit renders a snap.
 
 ### Editor documents
 
@@ -174,9 +194,9 @@ use Snapsbrew\Exceptions\ConflictException;
 $document = $snapsbrew->documents()->find($uuid);
 
 try {
-    $document = $snapsbrew->documents()->apply($uuid, [
+    $document = $snapsbrew->documents()->apply($uuid, revision: $document->revision, operations: [
         ['operation' => 'set_layer_property', 'layer_key' => 'headline', 'property' => 'fontWeight', 'value' => 700],
-    ], revision: $document->revision);
+    ]);
 } catch (ConflictException $exception) {
     $exception->currentRevision();   // The stored revision.
     $exception->currentDocument();   // The stored document. Apply your change to it, then write again.
@@ -297,13 +317,21 @@ if ($event->is(WebhookEvent::SNAP_COMPLETED)) {
 - Give the raw request body. Do not decode the JSON and encode it again. The instance escapes `/` and the characters that are not ASCII, so a new encoding gives other bytes.
 - The signature is the HMAC-SHA256 hex digest of `{X-Snapsbrew-Timestamp}.{raw body}`. The SDK compares it in constant time.
 - The SDK refuses a delivery that the instance signed more than 300 seconds before or after the current time. To change this tolerance, give `tolerance` to the constructor.
-- `$exception->reason` tells why the SDK refused the delivery: `VerificationFailure::Signature`, `VerificationFailure::Timestamp` or `VerificationFailure::Payload`.
-- `$event->deliveryId` is the `X-Snapsbrew-Delivery` header. All attempts of one delivery have the same value. Use it to ignore a duplicate.
+- The header names are not case-sensitive. The signature can be lowercase or uppercase hex.
+- `$event->deliveryId` is the `X-Snapsbrew-Delivery` header. All attempts of one delivery have the same value. Use it to ignore a duplicate. An older instance sends no delivery header. Then the verification passes, and `$event->deliveryId` is null.
+
+`$exception->reason` tells why the SDK refused the delivery. The JS, Python and Ruby SDKs use the same three reasons:
+
+| `reason` | Cause |
+|---|---|
+| `VerificationFailure::Signature` (`signature`) | The signature header is missing, or the signature does not match the body. |
+| `VerificationFailure::Timestamp` (`timestamp`) | The timestamp header is missing, is not Unix seconds, or is outside the tolerance. |
+| `VerificationFailure::Payload` (`payload`) | The signature is valid, but the body is not a JSON object. |
 
 | Event | Constant | Payload |
 |---|---|---|
 | `snap.completed` | `WebhookEvent::SNAP_COMPLETED` | `$event->snap()` |
-| `snap.failed` | `WebhookEvent::SNAP_FAILED` | `$event->snap()`, with `lastError` `render_failed` and a null `mediaUrl` |
+| `snap.failed` | `WebhookEvent::SNAP_FAILED` | `$event->snap()`, with `lastError` `render_failed` and an empty `mediaUrl` |
 | `snap-import.completed` | `WebhookEvent::BATCH_COMPLETED` | `$event->batch()` and `$event->template()` |
 | `snap-import.failed` | `WebhookEvent::BATCH_FAILED` | `$event->batch()` and `$event->template()` |
 | `snap-import.canceled` | `WebhookEvent::BATCH_CANCELED` | `$event->batch()` and `$event->template()` |
@@ -356,22 +384,22 @@ try {
 
 ## Retries
 
-The SDK sends a request again after these errors:
+The SDK sends a failed request again, up to 2 times by default. The JS, Python and Ruby SDKs use the same rules:
 
-- HTTP 429
-- HTTP 5xx
-- HTTP 409 with the code `idempotency_key_in_progress`, if the request has an idempotency key
-- a connection error
+- It retries a 429 for each request. A 429 means that the instance did not do the request.
+- It retries a connection error that occurs before the request leaves the client, for each request. For example, DNS failed or the instance refused the connection.
+- It retries a 5xx, a timeout, or a connection error after the instance can have received the request, for an idempotent request only.
+- It retries a 409 with the code `idempotency_key_in_progress`, for a request with an idempotency key. It does not retry a 409 with another code, because a repeat with the same key does not succeed.
 
-The SDK does not send a request again if the request is not idempotent and the instance can have received it. Thus a `POST` gets a retry only in these conditions:
+These requests are idempotent:
 
-- The response is a 429.
-- The connection failed before the request left the client. For example, DNS failed or the instance refused the connection.
-- The request has an idempotency key, or the endpoint is safe to call two times (publish, cancel a batch, sync tags).
+- Each `GET`, `PUT` and `DELETE`, for example `templates()->delete()`. After a lost response, a retried `templates()->delete()` throws a `NotFoundException`, because the first request deleted the template.
+- `templates()->publish()`, `templates()->setTags()` and `batches()->cancel()`.
+- `snaps()->create()` and `batches()->create()` with an idempotency key.
 
-The SDK does not retry a 409 with another code, because a repeat with the same key does not succeed.
+The other requests are not idempotent: `templates()->create()`, `templates()->update()`, `snaps()->create()` and `batches()->create()` with no key, `screenshots()->create()`, `media()->upload()`, `tags()->create()` and `forms()->submit()`. An editor document write (`documents()->replace()` and `documents()->apply()`) is never retried after a 5xx or a timeout, because a repeat gets a 409.
 
-The delay grows exponentially, with jitter: 0.5 s, 1 s, 2 s, and a maximum of 8 s. If the response has a `Retry-After` header, the SDK waits for that time. If `Retry-After` is more than 60 seconds, the SDK does not wait and throws the `RateLimitException`.
+The delay grows exponentially, with equal jitter: 0.5 s, 1 s, 2 s, and a maximum of 8 s. Half of each delay is random. If the response has a `Retry-After` header, the SDK waits for that time. If `Retry-After` is more than 60 seconds, the SDK does not wait and throws the exception.
 
 The instance allows 60 requests per minute for one user. The two preview endpoints allow 10 requests per minute. The editor document endpoints allow 30 requests per minute for one user and 180 for one company. Over a limit, the instance sends a 429 with `Retry-After`.
 
@@ -518,4 +546,4 @@ To report a security problem, read [SECURITY.md](SECURITY.md).
 
 ## License
 
-The owner has not chosen a license yet.
+The SDK is available under the [MIT License](LICENSE).

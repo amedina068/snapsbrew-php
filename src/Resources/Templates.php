@@ -9,6 +9,7 @@ use Snapsbrew\Data\CursorPage;
 use Snapsbrew\Data\Payload;
 use Snapsbrew\Data\Preview;
 use Snapsbrew\Data\PublishedTemplate;
+use Snapsbrew\Data\Tag;
 use Snapsbrew\Data\Template;
 use Snapsbrew\Data\TemplateSize;
 use Snapsbrew\Http\Transport;
@@ -166,6 +167,23 @@ final readonly class Templates
         );
 
         return new Preview($response->body);
+    }
+
+    /**
+     * Replace the tags of a template. An empty list removes every tag.
+     *
+     * @param  array<int>  $tagIds
+     * @return list<Tag>
+     */
+    public function setTags(string $uuid, array $tagIds): array
+    {
+        $body = $this->transport->post(
+            'v1/templates/'.rawurlencode($uuid).'/tags',
+            ['tag_ids' => array_values($tagIds)],
+            idempotent: true,
+        )->json();
+
+        return array_map(Tag::fromArray(...), Payload::of($body)->objects('tags'));
     }
 
     /**

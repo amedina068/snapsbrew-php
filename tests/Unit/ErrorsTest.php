@@ -248,8 +248,8 @@ it('maps a 403 to the authorization error on every bearer operation', function (
     'templates publish' => [fn (Snapsbrew $client) => $client->templates()->publish('tpl')],
     'templates preview' => [fn (Snapsbrew $client) => $client->templates()->preview('tpl')],
     'documents find' => [fn (Snapsbrew $client) => $client->documents()->find('tpl')],
-    'documents replace' => [fn (Snapsbrew $client) => $client->documents()->replace('tpl', [], revision: 1)],
-    'documents apply' => [fn (Snapsbrew $client) => $client->documents()->apply('tpl', [], revision: 1)],
+    'documents replace' => [fn (Snapsbrew $client) => $client->documents()->replace('tpl', revision: 1, document: [])],
+    'documents apply' => [fn (Snapsbrew $client) => $client->documents()->apply('tpl', revision: 1, operations: [])],
     'documents preflight' => [fn (Snapsbrew $client) => $client->documents()->preflight('tpl')],
     'snaps create' => [fn (Snapsbrew $client) => $client->snaps()->create('tpl')],
     'snaps collection' => [fn (Snapsbrew $client) => $client->snaps()->createFromCollection('col')],
@@ -266,7 +266,7 @@ it('maps a 403 to the authorization error on every bearer operation', function (
     'guides platform' => [fn (Snapsbrew $client) => $client->guides()->platform('instagram')],
     'tags list' => [fn (Snapsbrew $client) => $client->tags()->list()],
     'tags create' => [fn (Snapsbrew $client) => $client->tags()->create('Launch')],
-    'tags sync' => [fn (Snapsbrew $client) => $client->tags()->sync('tpl', [1])],
+    'templates set tags' => [fn (Snapsbrew $client) => $client->templates()->setTags('tpl', [1])],
 ]);
 
 it('does not read the text of a 404 message', function () {

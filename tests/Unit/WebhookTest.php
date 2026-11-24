@@ -56,21 +56,28 @@ it('matches each shared test vector', function (array $case) {
     if ($case['valid']) {
         $event = $webhook->verify($case['body'], $case['headers'], now: $vectors['now']);
 
-        expect($event->type)->toBe($case['name'])
+        expect($event->type)->toBe(json_decode($case['body'], true)['event'])
             ->and($event->payload)->toBe(json_decode($case['body'], true))
             ->and($event->timestamp)->toBe((int) $case['headers']['X-Snapsbrew-Timestamp'])
-            ->and($event->deliveryId)->toBe($case['headers']['X-Snapsbrew-Delivery']);
+            ->and($event->deliveryId)->toBe($case['delivery_id']);
 
         return;
     }
 
-    expect(fn () => $webhook->verify($case['body'], $case['headers'], now: $vectors['now']))
-        ->toThrow(WebhookVerificationException::class);
+    try {
+        $webhook->verify($case['body'], $case['headers'], now: $vectors['now']);
+    } catch (WebhookVerificationException $exception) {
+        expect($exception->reason)->toBe(VerificationFailure::from($case['reason']));
+
+        return;
+    }
+
+    $this->fail('The delivery was accepted.');
 })->with(webhookCases());
 
 it('signs the documented string of each valid vector', function (array $case) {
-    if (! $case['valid']) {
-        expect($case)->not->toHaveKey('signed_string');
+    if (! isset($case['signed_string'])) {
+        expect($case['valid'] && $case['delivery_id'] !== null && $case['name'] === 'snap.completed')->toBeFalse();
 
         return;
     }
@@ -102,7 +109,7 @@ it('reads a failed snap with an empty media URL', function () {
     expect($event->is(WebhookEvent::SNAP_FAILED))->toBeTrue()
         ->and($event->snap()?->isFailed())->toBeTrue()
         ->and($event->snap()?->lastError)->toBe(Snap::ERROR_RENDER_FAILED)
-        ->and($event->snap()?->mediaUrl)->toBeNull();
+        ->and($event->snap()?->mediaUrl)->toBe('');
 });
 
 it('reads the batch of a batch event', function () {
@@ -187,7 +194,7 @@ it('reads the headers in any case and as lists', function () {
     expect($event->deliveryId)->toBe('3f2b6c1e-8a4d-4e5f-9b0a-1c2d3e4f5a6b');
 });
 
-it('refuses a delivery with a missing header', function (string $header) {
+it('refuses a delivery with a missing header', function (string $header, VerificationFailure $reason) {
     $body = '{"event":"snap.completed"}';
     $headers = signedHeaders($body, 1767225600);
     unset($headers[$header]);
@@ -195,13 +202,16 @@ it('refuses a delivery with a missing header', function (string $header) {
     try {
         (new Webhook('whsec_test'))->verify($body, $headers, now: 1767225600);
     } catch (WebhookVerificationException $exception) {
-        expect($exception->reason)->toBe(VerificationFailure::Signature);
+        expect($exception->reason)->toBe($reason);
 
         return;
     }
 
     $this->fail('The delivery was accepted.');
-})->with(['X-Snapsbrew-Signature', 'X-Snapsbrew-Timestamp']);
+})->with([
+    'signature' => ['X-Snapsbrew-Signature', VerificationFailure::Signature],
+    'timestamp' => ['X-Snapsbrew-Timestamp', VerificationFailure::Timestamp],
+]);
 
 it('gives a null delivery ID when the header is missing', function () {
     $body = '{"event":"snap.completed"}';

@@ -99,7 +99,7 @@ final class Fixtures
 
         return [
             'id' => $id,
-            'media_url' => $async ? null : "https://snapsbrew.test/storage/snaps/{$id}.{$format}",
+            'media_url' => $async ? '' : "https://snapsbrew.test/storage/snaps/{$id}.{$format}",
             'width' => 1200,
             'height' => 630,
             'type' => self::string($request['type']) ?? 'image',

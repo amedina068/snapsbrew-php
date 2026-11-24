@@ -16,6 +16,7 @@ use Snapsbrew\Http\RetryPolicy;
 use Snapsbrew\Http\Transport;
 use Snapsbrew\Resources\Batches;
 use Snapsbrew\Resources\Documents;
+use Snapsbrew\Resources\Forms;
 use Snapsbrew\Resources\Guides;
 use Snapsbrew\Resources\Media;
 use Snapsbrew\Resources\Screenshots;
@@ -53,7 +54,7 @@ class Snapsbrew
      * @param  string  $url  The URL of your instance. The SDK removes a trailing `/api`.
      * @param  string|null  $token  An API token with the `api_requests` ability.
      * @param  string|null  $signingKey  The key for signed image URLs.
-     * @param  float  $timeout  The request timeout in seconds. The SDK uses it when it creates the HTTP client.
+     * @param  float  $timeout  The request timeout in seconds. A synchronous render can take 60 seconds. The SDK uses it when it creates the HTTP client.
      * @param  int|RetryPolicy  $retries  The number of retries, or a full retry policy.
      * @param  ClientInterface|null  $httpClient  Any PSR-18 client. If you give one, configure its timeout yourself.
      */
@@ -61,7 +62,7 @@ class Snapsbrew
         string $url,
         #[SensitiveParameter] ?string $token = null,
         #[SensitiveParameter] ?string $signingKey = null,
-        float $timeout = 30.0,
+        float $timeout = 60.0,
         int|RetryPolicy $retries = 2,
         ?ClientInterface $httpClient = null,
         ?RequestFactoryInterface $requestFactory = null,
@@ -129,6 +130,14 @@ class Snapsbrew
     public function tags(): Tags
     {
         return new Tags($this->transport);
+    }
+
+    /**
+     * The embedded forms. A submit sends no token, so the client needs no token for it.
+     */
+    public function forms(): Forms
+    {
+        return new Forms($this->transport);
     }
 
     /**

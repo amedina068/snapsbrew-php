@@ -51,7 +51,7 @@ return [
     |
     */
 
-    'timeout' => (float) env('SNAPSBREW_TIMEOUT', 30),
+    'timeout' => (float) env('SNAPSBREW_TIMEOUT', 60),
 
     'retries' => (int) env('SNAPSBREW_RETRIES', 2),
 

@@ -29,7 +29,7 @@ final readonly class Snap
     public const ERROR_WEBHOOK_UNREACHABLE = 'webhook_unreachable';
 
     /**
-     * @param  string|null  $mediaUrl  The image URL. It is null until the render completes, and after a failed render.
+     * @param  string|null  $mediaUrl  The image URL, as the instance sends it. The instance sends an empty string for a snap with no image, for example a failed snap.
      * @param  string|null  $lastError  A fixed error code: one of the `ERROR_` constants, or `webhook_http_<status>` when the webhook receiver answered with an error status.
      * @param  array<array-key, mixed>  $variants  The variants that the render used.
      */
@@ -63,7 +63,7 @@ final readonly class Snap
             id: $payload->string('id'),
             status: Status::tryFrom($payload->string('status')) ?? throw UnexpectedResponseException::field('status', 'status'),
             type: $payload->nullableString('type') ?? 'image',
-            mediaUrl: $payload->nullableString('media_url') ?: null,
+            mediaUrl: $payload->nullableString('media_url'),
             width: $payload->nullableInt('width'),
             height: $payload->nullableInt('height'),
             isAsync: $payload->bool('is_async'),

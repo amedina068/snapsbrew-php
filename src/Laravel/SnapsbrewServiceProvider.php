@@ -24,7 +24,7 @@ final class SnapsbrewServiceProvider extends ServiceProvider
                 url: self::string($config->get('snapsbrew.url')) ?? '',
                 token: self::string($config->get('snapsbrew.token')),
                 signingKey: self::string($config->get('snapsbrew.signing_key')),
-                timeout: is_numeric($timeout = $config->get('snapsbrew.timeout')) ? (float) $timeout : 30.0,
+                timeout: is_numeric($timeout = $config->get('snapsbrew.timeout')) ? (float) $timeout : 60.0,
                 retries: is_numeric($retries = $config->get('snapsbrew.retries')) ? (int) $retries : 2,
             );
         });

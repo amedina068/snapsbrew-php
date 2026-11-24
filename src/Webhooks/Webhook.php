@@ -39,6 +39,11 @@ final readonly class Webhook
     /**
      * Verify a delivery and return its event.
      *
+     * The checks run in this order, the same as in the other SDKs: the
+     * signature header, the timestamp format, the signature, the tolerance
+     * and the JSON body. An older instance sends no delivery header. Then the
+     * event has a null `$deliveryId`.
+     *
      * Give the raw request body, byte for byte. The instance escapes `/` and
      * the characters that are not ASCII. A new JSON encoding gives other
      * bytes, and the signature check fails.
@@ -55,17 +60,26 @@ final readonly class Webhook
         $signature = self::header($headers, self::SIGNATURE_HEADER);
         $timestamp = self::header($headers, self::TIMESTAMP_HEADER);
 
-        if ($signature === null || $timestamp === null || ! hash_equals($this->sign($timestamp, $payload), $signature)) {
+        if ($signature === null) {
             throw WebhookVerificationException::invalidSignature();
         }
 
-        if (! ctype_digit($timestamp) || abs(($now ?? time()) - (int) $timestamp) > $this->tolerance) {
+        if ($timestamp === null || ! ctype_digit($timestamp)) {
+            throw WebhookVerificationException::invalidTimestamp();
+        }
+
+        if (! hash_equals($this->sign($timestamp, $payload), strtolower($signature))) {
+            throw WebhookVerificationException::invalidSignature();
+        }
+
+        if (abs(($now ?? time()) - (int) $timestamp) > $this->tolerance) {
             throw WebhookVerificationException::timestampOutsideTolerance($this->tolerance);
         }
 
         $data = json_decode($payload, true);
 
-        if (! is_array($data)) {
+        // A JSON list also decodes to an array, so check that the body is an object.
+        if (! is_array($data) || ! str_starts_with(ltrim($payload), '{')) {
             throw WebhookVerificationException::invalidPayload();
         }
 
@@ -91,7 +105,9 @@ final readonly class Webhook
             $value = $value[0] ?? null;
         }
 
-        return is_string($value) ? trim($value) : null;
+        $value = is_string($value) ? trim($value) : '';
+
+        return $value === '' ? null : $value;
     }
 
     /**

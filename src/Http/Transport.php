@@ -23,7 +23,8 @@ use Snapsbrew\Snapsbrew;
  * It sends a request that is not idempotent again only after a 429, or after
  * a connection error that occurred before the instance received the request.
  * A request with an idempotency key also gets a retry after a 409 with the
- * code `idempotency_key_in_progress`.
+ * code `idempotency_key_in_progress`. A `PUT` is idempotent, except when the
+ * caller says that it is not, for example a write with a revision check.
  *
  * @internal
  */
@@ -71,10 +72,11 @@ final readonly class Transport
 
     /**
      * @param  array<string, mixed>  $data
+     * @param  bool  $idempotent  False for a write with a revision check. A repeat of it gets a 409.
      */
-    public function put(string $path, array $data = []): Response
+    public function put(string $path, array $data = [], bool $idempotent = true): Response
     {
-        return $this->send('PUT', $path, body: $this->encode($data));
+        return $this->send('PUT', $path, body: $this->encode($data), idempotent: $idempotent);
     }
 
     public function delete(string $path): Response
@@ -88,6 +90,16 @@ final readonly class Transport
     }
 
     /**
+     * Post a multipart body to a signed absolute URL, for example the submit
+     * URL of an embedded form. The URL carries its own signature, so the SDK
+     * does not send the token to it.
+     */
+    public function submit(string $url, Multipart $multipart): Response
+    {
+        return $this->send('POST', $url, body: $multipart->body, contentType: $multipart->contentType(), idempotent: false, signed: true);
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      */
     private function send(
@@ -96,10 +108,11 @@ final readonly class Transport
         array $query = [],
         ?string $body = null,
         string $contentType = 'application/json',
-        bool $idempotent = false,
+        ?bool $idempotent = null,
         bool $keyed = false,
+        bool $signed = false,
     ): Response {
-        $idempotent = $idempotent || in_array($method, self::IDEMPOTENT_METHODS, true);
+        $idempotent ??= in_array($method, self::IDEMPOTENT_METHODS, true);
         $attempts = 0;
 
         while (true) {
@@ -107,7 +120,7 @@ final readonly class Transport
 
             try {
                 $response = Response::fromPsr(
-                    $this->client->sendRequest($this->request($method, $path, $query, $body, $contentType))
+                    $this->client->sendRequest($this->request($method, $path, $query, $body, $contentType, $signed))
                 );
             } catch (ClientExceptionInterface $exception) {
                 $error = ConnectionException::from($exception);
@@ -152,22 +165,25 @@ final readonly class Transport
     /**
      * @param  array<string, mixed>  $query
      */
-    private function request(string $method, string $path, array $query, ?string $body, string $contentType): RequestInterface
+    private function request(string $method, string $path, array $query, ?string $body, string $contentType, bool $signed): RequestInterface
     {
-        if ($this->token === null || $this->token === '') {
-            throw MissingCredentialsException::token();
-        }
-
-        $url = $this->apiUrl.'/'.ltrim($path, '/');
+        $url = $signed ? $path : $this->apiUrl.'/'.ltrim($path, '/');
 
         if ($query !== []) {
             $url .= '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
         }
 
         $request = $this->requests->createRequest($method, $url)
-            ->withHeader('Authorization', 'Bearer '.$this->token)
             ->withHeader('Accept', 'application/json')
             ->withHeader('User-Agent', 'snapsbrew-php/'.Snapsbrew::VERSION);
+
+        if (! $signed) {
+            if ($this->token === null || $this->token === '') {
+                throw MissingCredentialsException::token();
+            }
+
+            $request = $request->withHeader('Authorization', 'Bearer '.$this->token);
+        }
 
         if ($body === null) {
             return $request;
