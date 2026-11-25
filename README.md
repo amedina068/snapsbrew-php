@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/amedina068/snapsbrew-php/actions/workflows/ci.yml/badge.svg)](https://github.com/amedina068/snapsbrew-php/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/amedina068/snapsbrew-php/badge)](https://scorecard.dev/viewer/?uri=github.com/amedina068/snapsbrew-php)
 
 A PHP client for a self-hosted Snapsbrew instance. The package also has a Laravel integration.
 
