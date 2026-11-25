@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-25
+
 ### Added
 
 - `forms()->submit($url, $layers)` sends the layers of an embedded form to its signed submit URL, as in the Ruby SDK. A string is text. A resource or an `SplFileInfo` is an image. It sends no token, so a client with no token can submit. A template form returns one `Snap`. A collection form returns a list of snaps. A 429 throws a `RateLimitException` with the code `rate_limited`, and the SDK retries it. The SDK does not retry a 5xx.
@@ -13,29 +15,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `media()->upload()` also accepts an `SplFileInfo`, for example an uploaded file.
 - The webhook vectors have the expected `reason` of each invalid case and the `delivery_id` of each valid case.
 - The package is under the MIT License. `composer.json` has `"license": "MIT"`.
-
-### Changed
-
-- Breaking: `documents()->replace($uuid, $revision, $document)` and `documents()->apply($uuid, $revision, $operations)` take the revision before the document or the operations, the same order as in the other SDKs. Calls with named arguments do not change.
-- Breaking: `Snap::$mediaUrl` is the value that the instance sends. A failed snap has an empty string. It was null. `BatchItem::$mediaUrl` is also the value that the instance sends.
-- Breaking: the default timeout is 60 seconds. It was 30 seconds. A synchronous render can take that long, and the other SDKs use 60 seconds. `SNAPSBREW_TIMEOUT` still changes it.
-- A missing or malformed `X-Snapsbrew-Timestamp` header throws the reason `VerificationFailure::Timestamp`. It was `VerificationFailure::Signature`.
-- The webhook verifier accepts an uppercase hex signature. It changes the signature to lowercase before the constant-time compare.
-- An empty `X-Snapsbrew-Delivery` header gives a null `deliveryId`.
-- A signed body that is a JSON list throws the reason `VerificationFailure::Payload`.
-
-### Removed
-
-- Breaking: `tags()->sync()`. Use `templates()->setTags()`.
-
-### Fixed
-
-- `documents()->replace()` is no longer sent again after a 5xx or a timeout. A repeat after a lost response got a 409, because the first write changed the revision.
-
-## [0.2.0] - Unreleased
-
-### Added
-
 - `documents()`: read, replace and apply operations to the v2 editor document of a template, and run a preflight. The SDK returns `EditorDocument`, `Preflight` and `PreflightIssue` objects.
 - `ConflictException::currentRevision()` and `ConflictException::currentDocument()`. They read the body of an `editor_document_conflict`.
 - `ConflictException::EDITOR_DOCUMENT_CONFLICT`.
@@ -52,6 +31,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Breaking: `documents()->replace($uuid, $revision, $document)` and `documents()->apply($uuid, $revision, $operations)` take the revision before the document or the operations, the same order as in the other SDKs. Calls with named arguments do not change.
+- Breaking: `Snap::$mediaUrl` is the value that the instance sends. A failed snap has an empty string. It was null. `BatchItem::$mediaUrl` is also the value that the instance sends.
+- Breaking: the default timeout is 60 seconds. It was 30 seconds. A synchronous render can take that long, and the other SDKs use 60 seconds. `SNAPSBREW_TIMEOUT` still changes it.
+- A missing or malformed `X-Snapsbrew-Timestamp` header throws the reason `VerificationFailure::Timestamp`. It was `VerificationFailure::Signature`.
+- The webhook verifier accepts an uppercase hex signature. It changes the signature to lowercase before the constant-time compare.
+- An empty `X-Snapsbrew-Delivery` header gives a null `deliveryId`.
+- A signed body that is a JSON list throws the reason `VerificationFailure::Payload`.
 - The message of an error body with a `code` and no `message` includes the code, for example `The Snapsbrew instance answered with HTTP status 422 (editor_operation_layer_not_found).`
 - `Snap::$mediaUrl` and `BatchItem::$mediaUrl` are null when the instance sends an empty string. A failed snap has an empty `media_url`.
 - The docs of `Snap::$lastError` and `BatchItem::$lastError` list the error codes.
@@ -64,9 +50,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+- Breaking: `tags()->sync()`. Use `templates()->setTags()`.
 - The README and the docs no longer say that a render uses a credit. The instance keeps a usage log with no balance.
 
-## [0.1.0] - Unreleased
+### Fixed
+
+- `documents()->replace()` is no longer sent again after a 5xx or a timeout. A repeat after a lost response got a 409, because the first write changed the revision.
+
+## [0.1.0] - Not published
+
+Version 0.1.0 was not published. Release 0.2.0 contains these changes.
 
 ### Added
 
