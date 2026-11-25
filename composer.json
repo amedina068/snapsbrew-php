@@ -5,6 +5,18 @@
     "keywords": ["snapsbrew", "images", "templates", "og-image", "laravel", "sdk"],
     "homepage": "https://github.com/amedina068/snapsbrew-php",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Alejandro Medina",
+            "homepage": "https://amedina.me"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/amedina068/snapsbrew-php/issues",
+        "source": "https://github.com/amedina068/snapsbrew-php",
+        "docs": "https://snapsbrew.com/docs/sdks/overview",
+        "security": "https://github.com/amedina068/snapsbrew-php/security/policy"
+    },
     "require": {
         "php": "^8.2",
         "php-http/discovery": "^1.19",
