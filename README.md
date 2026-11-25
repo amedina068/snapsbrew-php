@@ -1,5 +1,8 @@
 # Snapsbrew PHP SDK
 
+[![CI](https://github.com/amedina068/snapsbrew-php/actions/workflows/ci.yml/badge.svg)](https://github.com/amedina068/snapsbrew-php/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A PHP client for a self-hosted Snapsbrew instance. The package also has a Laravel integration.
 
 Snapsbrew renders images ("snaps") from templates. Each user runs an own instance, so the client needs the URL of your instance.
@@ -44,7 +47,7 @@ composer require snapsbrew/snapsbrew-php:dev-main
 
 The repository has no release tag yet. Thus `composer require snapsbrew/snapsbrew-php` without `:dev-main` fails. The `:dev-main` suffix lets Composer install the branch, also when `minimum-stability` is `stable`.
 
-The repository is private. If Composer cannot read it, give Composer a GitHub token with read access to the repository:
+The repository is public, so Composer needs no token. If GitHub limits the API requests of Composer, give Composer a GitHub token:
 
 ```bash
 composer config --global github-oauth.github.com <your-token>
@@ -540,10 +543,22 @@ The integration tests call a real instance. They run only when `SNAPSBREW_TEST_U
 SNAPSBREW_TEST_URL=https://snapsbrew.example.com SNAPSBREW_TEST_TOKEN=... composer test:integration
 ```
 
-## Security
+## Related projects
 
-To report a security problem, read [SECURITY.md](SECURITY.md).
+- [Snapsbrew](https://github.com/amedina068/snapsbrew): the self-hosted app that this SDK calls. It uses the AGPL-3.0.
+- [Documentation](https://snapsbrew.com/docs): the guides for the app and the SDKs. The source is in [snapsbrew-docs](https://github.com/amedina068/snapsbrew-docs).
+- [SDK overview](https://snapsbrew.com/docs/sdks/overview): the install steps and the features of each SDK.
+- SDKs for other languages: [TypeScript](https://github.com/amedina068/snapsbrew-js), [Python](https://github.com/amedina068/snapsbrew-python), [Ruby](https://github.com/amedina068/snapsbrew-ruby).
+
+## Community
+
+- [CONTRIBUTING.md](CONTRIBUTING.md): how to set up the code and open a pull request.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): the rules for issues, pull requests, and reviews.
+- [SECURITY.md](SECURITY.md): how to report a security problem in private.
+- [CHANGELOG.md](CHANGELOG.md): the changes in each version.
+
+Report a problem with the SDK in the issues of this repository. Report a problem with the app in the [Snapsbrew issues](https://github.com/amedina068/snapsbrew/issues).
 
 ## License
 
-The SDK is available under the [MIT License](LICENSE).
+This SDK is available under the [MIT License](LICENSE). You can use it in closed source code. The Snapsbrew app uses the AGPL-3.0. That license does not cover this SDK.
