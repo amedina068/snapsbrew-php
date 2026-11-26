@@ -11,3 +11,4 @@ Write what the change does and why.
 - [ ] I added a line to the `Unreleased` section of `CHANGELOG.md`.
 - [ ] The documentation uses Simple English (ASD-STE100).
 - [ ] The change has no token, no signing key and no other secret.
+- [ ] The PR title follows Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:` and similar).

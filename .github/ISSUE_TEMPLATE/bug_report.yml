@@ -1,0 +1,68 @@
+name: Bug report
+description: Report a fault in the SDK.
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report a security problem here. Read SECURITY.md.
+        Do not paste a token or a signing key.
+  - type: textarea
+    id: what-occurred
+    attributes:
+      label: What occurred
+      description: Write what the SDK did.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: Write what the SDK must do.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Code
+      description: The smallest code that shows the fault.
+      render: php
+  - type: input
+    id: sdk-version
+    attributes:
+      label: SDK version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      placeholder: "8.3"
+    validations:
+      required: true
+  - type: input
+    id: laravel-version
+    attributes:
+      label: Laravel version
+      description: If you use Laravel.
+  - type: input
+    id: http-client
+    attributes:
+      label: HTTP client
+      placeholder: Guzzle 7.9
+  - type: input
+    id: request-uuid
+    attributes:
+      label: Request UUID
+      description: If the exception has a request UUID (`$exception->requestUuid()`), write it here.

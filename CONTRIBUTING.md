@@ -55,6 +55,20 @@ Write documentation, comments and commit messages in Simple English (ASD-STE100)
 - Do not use contractions or semicolons.
 - Use "can", "will" and "must". Do not use "should", "may", "might", "could" or "would".
 
+## Pull request titles
+
+The title of a pull request must follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). The `PR title` check of the CI fails if the title does not follow it. The titles of the merged pull requests become the lines of the release notes, so a clear title helps each user.
+
+Start the title with a type: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore` or `revert`. A scope in parentheses is optional. Examples:
+
+- `feat: add a method to cancel a snap batch`
+- `fix(laravel): read the instance URL from the config file`
+- `docs: add a webhook example to the README`
+
+## Triage
+
+Each new issue gets the `needs-triage` label. The maintainer reads the issue and replaces `needs-triage` with a type label, for example `bug`, `enhancement`, `documentation` or `question`.
+
 ## Report a bug
 
 Open an issue with the bug template. To report a security problem, read [SECURITY.md](SECURITY.md). Do not open a public issue for a security problem.
