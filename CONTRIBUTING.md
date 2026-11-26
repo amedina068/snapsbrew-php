@@ -65,6 +65,20 @@ Start the title with a type: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`,
 - `fix(laravel): read the instance URL from the config file`
 - `docs: add a webhook example to the README`
 
+## Release
+
+The `Release` workflow (`.github/workflows/release.yml`) runs the checks, then creates the git tag `v<version>` and the GitHub release. Packagist reads the new tag through its GitHub integration. The repository has no Packagist secret. The workflow does not call Packagist.
+
+1. Set `VERSION` in `src/Snapsbrew.php` to the new version.
+2. In `CHANGELOG.md`, move the lines under `Unreleased` to a new section `## [<version>] - <date>`.
+3. Open a pull request with these changes. Merge it.
+4. Start the workflow: `gh workflow run release.yml --ref main -f version=<version>`.
+5. Replace the notes of the new GitHub release with the section of `CHANGELOG.md`: `gh release edit v<version> --notes-file <file>`.
+
+### First release
+
+Before the first release, submit the repository one time at <https://packagist.org/packages/submit>, with the URL `https://github.com/amedina068/snapsbrew-php`. Log in to Packagist with the GitHub account. Then the Packagist GitHub hook updates the package for each new tag.
+
 ## Triage
 
 Each new issue gets the `needs-triage` label. The maintainer reads the issue and replaces `needs-triage` with a type label, for example `bug`, `enhancement`, `documentation` or `question`.
